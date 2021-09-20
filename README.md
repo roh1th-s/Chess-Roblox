@@ -1,2 +1,2 @@
 # Chess-Roblox
-A work-in-progress chess engine in Roblox.
+A work-in-progress chess game in Roblox.
