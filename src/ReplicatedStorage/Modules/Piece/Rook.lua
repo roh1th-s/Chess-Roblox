@@ -42,7 +42,7 @@ function Rook:GetMoves()
 	local moves = {} --oppTeam is temporary
 	local MovesBtwn = {}
 	local TempMoves = {}
-	local oppTeam = self:getOppTeam()
+	local oppTeam = self:GetOppTeam()
 	local Board = self.Board
 	local lnum = byte(self.Letter)
 

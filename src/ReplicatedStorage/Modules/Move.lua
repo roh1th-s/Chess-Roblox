@@ -17,39 +17,39 @@ function Move.new(initPosLetter, initPosNum, targetPosLetter, targetPosNum , cas
 	return self
 end
 
-function Move:setInitPos(initPosLetter, initPosNum)
+function Move:SetInitPos(initPosLetter, initPosNum)
 	self.initPosLetter = initPosLetter
 	self.initPosNum = initPosNum
 	
 	return self
 end
 
-function Move:setTargetPos(targetPosLetter, targetPosNum)
+function Move:SetTargetPos(targetPosLetter, targetPosNum)
 	self.targetPosLetter = targetPosLetter
 	self.targetPosNum = targetPosNum
 
 	return self
 end
 
-function Move:setCastlingMoves(castlingMoves)
+function Move:SetCastlingMoves(castlingMoves)
 	self.castlingMoves = castlingMoves
 
 	return self
 end
 
-function Move:setMovedPiece(movedPiece)
+function Move:SetMovedPiece(movedPiece)
 	self.movedPiece = movedPiece
 
 	return self
 end
 
-function Move:setCapturedPiece(capturedPiece)
+function Move:SetCapturedPiece(capturedPiece)
 	self.capturedPiece = capturedPiece
 
 	return self
 end
 
-function Move:setEnPassant(isEnPassant)
+function Move:SetEnPassant(isEnPassant)
 	self.isEnPassant = isEnPassant
 
 	return self

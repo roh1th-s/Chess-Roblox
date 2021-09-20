@@ -36,7 +36,7 @@ end
 
 function Knight:GetMoves()
 	local moves = {}
-	local oppTeam = self:getOppTeam()
+	local oppTeam = self:GetOppTeam()
 	local number = self.Number
 	local Board = self.Board
 	local lnum = byte(self.Letter)

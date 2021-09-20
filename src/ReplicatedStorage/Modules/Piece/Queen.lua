@@ -44,7 +44,7 @@ function Queen:GetMoves()
 	local MovesBtwn = {}
 	local TempMoves = {}
 	local Board = self.Board
-	local oppTeam = self:getOppTeam()
+	local oppTeam = self:GetOppTeam()
 	local number = self.Number
 	local lnum = byte(self.Letter)
 

@@ -110,17 +110,17 @@ function King:Castle(rook)
 	}
 	
 	local move = Move.new()
-	:setInitPos(initKingSpot.Letter , initKingSpot.Number)
-	:setTargetPos(kingTargetSpot.Letter , kingTargetSpot.Number)
-	:setMovedPiece(self)
-	:setCastlingMoves(castlingMoves)
+	:SetInitPos(initKingSpot.Letter , initKingSpot.Number)
+	:SetTargetPos(kingTargetSpot.Letter , kingTargetSpot.Number)
+	:SetMovedPiece(self)
+	:SetCastlingMoves(castlingMoves)
 	
 	return move
 end
 
 function King:GetMoves(onlyAttacks)
 	local moves = {}
-	local oppTeam = self:getOppTeam()
+	local oppTeam = self:GetOppTeam()
 	local lnum = byte(self.Letter)
 	local number = num(self.Number)
 	

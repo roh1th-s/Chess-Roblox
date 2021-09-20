@@ -91,10 +91,10 @@ function ChessGame.new()
 		instance.Position = newPos
 	end)
 	
-	GetPSDictionary.OnServerInvoke = self:getPieceSpotDictionaryFunction()
+	GetPSDictionary.OnServerInvoke = self:GetPieceSpotDictionaryFunction()
 end
 
-function ChessGame:getPieceSpotDictionaryFunction()
+function ChessGame:GetPieceSpotDictionaryFunction()
 	return function()
 		local Dictionary = {}
 		for _, spot in pairs(self.currentBoard.Spots) do
@@ -106,7 +106,7 @@ function ChessGame:getPieceSpotDictionaryFunction()
 	end
 end
 
-function ChessGame:promptPromotion(team)
+function ChessGame:PromptPromotion(team)
 	local plr = self.Players[team]
 	if not plr then error("Player not found") end
 	print(plr)

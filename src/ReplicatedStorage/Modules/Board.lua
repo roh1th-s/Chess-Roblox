@@ -33,7 +33,7 @@ local _INIT_POSITIONS = {
 
 	["A2"] = "Pawn", ["B2"]=  "Pawn", ["C2"]=  "Pawn", ["D2"] =  "Pawn",
 	["E2"]= "Pawn", ["F2"]= "Pawn", ["G2"]= "Pawn", ["H2"] = "Pawn",
-	["A1"] = "R", ["B1"]= "K", ["C1"]= "B", ["D1"] = "Q", 
+	["A1"] = "R", ["B1"]= "K", ["C1"]= "B", ["D1"] = "Q",
 	["E1"]= "King", ["F1"]= "B", ["G1"]= "K", ["H1"]= "R"
 }
 
@@ -47,12 +47,12 @@ ChessBoard.__index = function(table, index)
 	return nil
 end
 
-function ChessBoard.new(isClient, currentGame) 
+function ChessBoard.new(isClient, currentGame)
 	local self = {}
 	setmetatable(self,ChessBoard)
-	
+
 	self.Game = currentGame
-	
+
 	self.Spots = {}
 	self.Kings = {}
 	self.WhitePieces = {}
@@ -70,9 +70,9 @@ function ChessBoard.new(isClient, currentGame)
 	return self
 end
 
-function ChessBoard:CreatePiece(spot) 
+function ChessBoard:CreatePiece(spot)
 	local PieceName = _INIT_POSITIONS[spot.Instance.Name]
-	local PieceObject, team 
+	local PieceObject, team
 
 	local number = tonumber(spot.Number)
 	if (number == 1 or number == 2) then
@@ -114,8 +114,8 @@ function ChessBoard:Init(BoardModel)
 
 		local spot = Spot.new(letter, number, nil, tile, self)
 
-		if _INIT_POSITIONS[coordinateString] then 	
-			spot.Piece = self:CreatePiece(spot)		
+		if _INIT_POSITIONS[coordinateString] then
+			spot.Piece = self:CreatePiece(spot)
 		end
 
 		self.Spots[coordinateString] = spot
@@ -142,7 +142,7 @@ function ChessBoard:MakeMove(pieceSpotCoordinates, targetSpotCoordinates)
 		move = piece:Castle(associatedRook)
 	end
 
-	--En Passant Checks	
+	--En Passant Checks
 	if piece.Type == "Pawn" then
 		if absoluteNumberDiff == 1 and absoluteLetterDiff == 1 then
 			local pieceAtTargetSpot = self:GetPieceObjectAtSpot(targetSpotCoordinates[1], targetSpotCoordinates[2])
@@ -154,11 +154,11 @@ function ChessBoard:MakeMove(pieceSpotCoordinates, targetSpotCoordinates)
 				move = piece:EnPassant(pieceOnSide, targetSpot)
 			end
 		end
-		
-		local lastRankForTeam = piece.Team == "White" and "8" or "1" 
+
+		local lastRankForTeam = piece.Team == "White" and "8" or "1"
 		if targetSpotCoordinates[2] == lastRankForTeam then
 			print(self.Game)
-			self.Game:promptPromotion(piece.Team)
+			self.Game:PromptPromotion(piece.Team)
 		end
 	end
 
@@ -166,10 +166,10 @@ function ChessBoard:MakeMove(pieceSpotCoordinates, targetSpotCoordinates)
 		move = piece:MoveTo(targetSpotCoordinates[1], targetSpotCoordinates[2])
 	end
 
-	local oppTeam = piece:getOppTeam()
+	local oppTeam = piece:GetOppTeam()
 
 	if self:IsCheck(oppTeam) then
-		print("Check")	
+		print("Check")
 	end
 
 	self.LastMove = move
@@ -178,12 +178,12 @@ function ChessBoard:MakeMove(pieceSpotCoordinates, targetSpotCoordinates)
 end
 
 function ChessBoard:GetLastMove()
-	return self.LastMove	
+	return self.LastMove
 end
 
 --SERVER ONLY
 function ChessBoard:UndoLastMove() --TODO Need to update clients
-	local move = self.LastMove	
+	local move = self.LastMove
 
 end
 
@@ -253,7 +253,7 @@ function ChessBoard:Update(move)
 	self.LastMove = move
 end
 
-function ChessBoard:GetSpotObjectAt(arg1, arg2)	
+function ChessBoard:GetSpotObjectAt(arg1, arg2)
 	if arg2 then
 		return self.Spots[arg1 .. arg2]
 	end
@@ -262,10 +262,10 @@ function ChessBoard:GetSpotObjectAt(arg1, arg2)
 end
 
 function ChessBoard:GetSpotObjectFor(piece)
-	local CheckFunc 
+	local CheckFunc
 
 	if type(piece) == "userdata" then
-		CheckFunc = function(spot) 
+		CheckFunc = function(spot)
 			if spot.Piece and spot.Piece.Instance == piece then
 				return true
 			end
@@ -281,8 +281,8 @@ function ChessBoard:GetSpotObjectFor(piece)
 	end
 
 	for _, spot in pairs(self.Spots) do
-		if CheckFunc(spot) then return spot end	
-	end	
+		if CheckFunc(spot) then return spot end
+	end
 
 	return nil
 end
@@ -291,8 +291,8 @@ function ChessBoard:GetPieceObjectFromInstance(instance)
 	for _, spot in pairs(self.Spots) do
 		if spot.Piece and spot.Piece.Instance == instance then
 			return spot.Piece
-		end	
-	end	
+		end
+	end
 	return nil
 end
 
@@ -321,7 +321,7 @@ function ChessBoard:GetPiecesOfType(pieceType, team)
 		if piece.Type == pieceType then
 			insert(piece, piece)
 		end
-	end	
+	end
 
 	--if (#pieces == 1) then
 	--	return pieces[1]

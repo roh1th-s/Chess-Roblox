@@ -43,7 +43,7 @@ function Bishop:GetMoves()
 	local moves = {}
 	local MovesBtwn = {}
 	local TempMoves = {}
-	local oppTeam = self:getOppTeam()
+	local oppTeam = self:GetOppTeam()
 	local number = self.Number
 	local lnum = byte(self.Letter)
 

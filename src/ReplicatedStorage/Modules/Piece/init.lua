@@ -40,7 +40,7 @@ function Piece.new(spot, team, createInstance)
 	return self
 end
 
-function Piece:getOppTeam()
+function Piece:GetOppTeam()
 	if self.Team == "White" then
 		return "Black"
 	end
@@ -109,10 +109,10 @@ function Piece:MoveTo(arg1, arg2)
 	end
 	
 	local move = Move.new()
-	:setInitPos(initSpot.Letter , initSpot.Number)
-	:setTargetPos(targetSpot.Letter , targetSpot.Number)
-	:setMovedPiece(self)
-	:setCapturedPiece(initOccupyingPiece)
+	:SetInitPos(initSpot.Letter , initSpot.Number)
+	:SetTargetPos(targetSpot.Letter , targetSpot.Number)
+	:SetMovedPiece(self)
+	:SetCapturedPiece(initOccupyingPiece)
 
 	return move
 	

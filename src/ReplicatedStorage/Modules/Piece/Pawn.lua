@@ -50,7 +50,7 @@ end
 function Pawn:GetMoves(onlyAttacks)
 	local moves = {}
 	local factor,startn
-	local oppTeam = self:getOppTeam()
+	local oppTeam = self:GetOppTeam()
 	local lnum = byte(self.Letter)
 
 	if self.Team == "Black" then
@@ -158,11 +158,11 @@ function Pawn:EnPassant(pawnToBeCaptured, targetSpot)
 	end
 
 	local move = Move.new()
-	:setInitPos(initSpot.Letter , initSpot.Number)
-	:setTargetPos(targetSpot.Letter , targetSpot.Number)
-	:setMovedPiece(self)
-	:setCapturedPiece(pawnToBeCaptured)
-	:setEnPassant(true)
+	:SetInitPos(initSpot.Letter , initSpot.Number)
+	:SetTargetPos(targetSpot.Letter , targetSpot.Number)
+	:SetMovedPiece(self)
+	:SetCapturedPiece(pawnToBeCaptured)
+	:SetEnPassant(true)
 
 	return move
 end
