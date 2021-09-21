@@ -231,13 +231,13 @@ function ChessBoard:SimulateMove(initSpotCoordinates, targetSpotCoordinates)
 
 			if not pieceAtTargetSpot and pieceOnSideIsPawn then
 				local targetSpot = self:GetSpotObjectAt(targetSpotCoordinates[1], targetSpotCoordinates[2])
-				move = piece:EnPassant(pieceOnSide, targetSpot, {simulatedMove = true})
+				move = piece:EnPassant(pieceOnSide, targetSpot, { simulatedMove = true })
 			end
 		end
 	end
 
 	if not move then
-		move = piece:MoveTo(targetSpotCoordinates[1], targetSpotCoordinates[2], {simulatedMove = true})
+		move = piece:MoveTo(targetSpotCoordinates[1], targetSpotCoordinates[2], { simulatedMove = true })
 	end
 
 	self.LastSimulatedMove = move
@@ -268,7 +268,7 @@ function ChessBoard:UndoLastMove() --TODO Need to update clients
 	local move = self.LastMove
 end
 
-function ChessBoard:UndoLastSimulatedMove() 
+function ChessBoard:UndoLastSimulatedMove()
 	local move = self.LastSimulatedMove
 end
 
@@ -283,20 +283,21 @@ function ChessBoard:IsSpotUnderAttack(team, arg1, arg2)
 	local spot = self:GetSpotObjectAt(arg1, arg2)
 	local oppTeam = team == "Black" and "White" or "Black"
 	local attackingPieces = self[oppTeam .. "Pieces"]
-	
+
 	for _, attackingPiece in pairs(attackingPieces) do
 		if attackingPiece.Captured then
 			--remove(attackingPieces, table.find(attackingPieces, attackingPiece))
 			continue
 		end
-		local moves = attackingPiece:GetMoves({onlyAttacks = true})
-		
-		if (attackingPiece.Type == "Queen") then
+		local moves = attackingPiece:GetMoves({ onlyAttacks = true })
+
+		if attackingPiece.Type == "Queen" then
+			print(oppTeam .. "'s pieces.")
 			print(moves)
 		end
-		
+
 		for _, move in pairs(moves) do
-			if spot.Letter == move.Letter and spot.Number == move.Number then
+			if spot.Letter == move.TargetPosLetter and spot.Number == move.TargetPosNumber then
 				return true
 			end
 		end
@@ -393,16 +394,17 @@ end
 
 function ChessBoard:GetPieceObjectAtSpot(arg1, arg2)
 	local letter, number = arg1, arg2
-
+	print(arg1,arg2)
 	if type(arg1) == "userdata" then
 		local tile = arg1
 		local coordinates = tile.Name:split("")
 		letter = coordinates[1]
 		number = coordinates[2]
-	else
-		if type(arg1) == "string" and not arg2 then
+	elseif type(arg1) == "string" then
+		if not arg2 then
 			return self.Spots[arg1].Piece
 		end
+		return self.Spots[arg1 .. arg2].Piece
 	end
 
 	return self.Spots[letter .. number].Piece

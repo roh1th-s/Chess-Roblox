@@ -111,10 +111,10 @@ function King:Castle(rook)
 	end
 
 	local castlingMoves = {
-		["initPosLetter"] = initRookSpot.Letter,
-		["initPosNum"] = initRookSpot.Number,
-		["targetPosLetter"] = rookTargetSpot.Letter,
-		["targetPosNum"] = rookTargetSpot.Letter,
+		["InitPosLetter"] = initRookSpot.Letter,
+		["InitPosNumber"] = initRookSpot.Number,
+		["TargetPosLetter"] = rookTargetSpot.Letter,
+		["TargetPosNumber"] = rookTargetSpot.Letter,
 	}
 
 	local move = Move.new()
