@@ -4,53 +4,75 @@ Move.__index = Move
 function Move.new(initPosLetter, initPosNum, targetPosLetter, targetPosNum , castlingMoves , isEnPassant)
 	local self = setmetatable({}, Move)
 	
-	self.movedPiece = nil
-	self.capturedPiece = nil
+	self.MovedPiece = nil
+	self.CapturedPiece = nil
 	
-	self.initPosLetter = initPosLetter
-	self.initPosNum = initPosNum
-	self.targetPosLetter = targetPosLetter
-	self.targetPosNum = targetPosNum
-	self.castlingMoves = castlingMoves 
-	self.isEnPassant = isEnPassant
+	self.InitPosLetter = initPosLetter
+	self.InitPosNumber = initPosNum
+	self.TargetPosLetter = targetPosLetter
+	self.TargetPosNumber = targetPosNum
+	self.CastlingMoves = castlingMoves
+	self.IsCastling = castlingMoves ~= nil
+	self.IsEnPassant = isEnPassant
+	
+	return self
+end
+
+function Move:SetInitSpot(spot)
+	self.InitPosLetter = spot.Letter
+	self.InitPosNumber = spot.Number
 	
 	return self
 end
 
 function Move:SetInitPos(initPosLetter, initPosNum)
-	self.initPosLetter = initPosLetter
-	self.initPosNum = initPosNum
+	self.InitPosLetter = initPosLetter
+	self.InitPosNumber = initPosNum
+	
+	return self
+end
+
+function Move:SetTargetSpot(spot)
+	self.TargetPosLetter = spot.Letter
+	self.TargetPosNumber = spot.Number
 	
 	return self
 end
 
 function Move:SetTargetPos(targetPosLetter, targetPosNum)
-	self.targetPosLetter = targetPosLetter
-	self.targetPosNum = targetPosNum
+	self.TargetPosLetter = targetPosLetter
+	self.TargetPosNumber = targetPosNum
 
 	return self
 end
 
 function Move:SetCastlingMoves(castlingMoves)
-	self.castlingMoves = castlingMoves
+	self.CastlingMoves = castlingMoves
+	self.IsCastling = true
 
 	return self
 end
 
 function Move:SetMovedPiece(movedPiece)
-	self.movedPiece = movedPiece
+	self.MovedPiece = movedPiece
 
 	return self
 end
 
 function Move:SetCapturedPiece(capturedPiece)
-	self.capturedPiece = capturedPiece
+	self.CapturedPiece = capturedPiece
 
 	return self
 end
 
-function Move:SetEnPassant(isEnPassant)
-	self.isEnPassant = isEnPassant
+function Move:SetIsCastling(isCastling)
+	self.IsCastling = isCastling
+
+	return self
+end
+
+function Move:SetIsEnPassant(isEnPassant)
+	self.IsEnPassant = isEnPassant
 
 	return self
 end
@@ -62,8 +84,8 @@ function Move:CreateSendableObject()
 		sendableMove[key] = value
 	end
 	
-	sendableMove.movedPiece = nil
-	sendableMove.capturedPiece = nil
+	sendableMove.MovedPiece = nil
+	sendableMove.CapturedPiece = nil
 
 	return sendableMove
 end

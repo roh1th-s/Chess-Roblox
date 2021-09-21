@@ -45,24 +45,25 @@ function InputHandler.new()
 	return self
 end
 
-function InputHandler.IsMoveValid(move, movesTable)
+function InputHandler:IsMoveValid(target)
 	local CheckFunc
-	if type(move) == "userdata" then
+	if type(target) == "userdata" then
 		CheckFunc = function(spot)
-			if spot.Instance == move then
+			if spot.Instance == target then
 				return true
 			end
 			return false
 		end
 	else
 		CheckFunc = function(spot)
-			if spot == move then
+			if spot == target then
 				return true
 			end
 			return false
 		end
 	end
-	for i, spot in pairs(movesTable) do
+	for _, move in pairs(self.Moves) do
+		local spot = self.Board:GetSpotObjectAt(move.TargetPosLetter, move.TargetPosNumber)
 		if CheckFunc(spot) then
 			return true
 		end
@@ -71,11 +72,10 @@ function InputHandler.IsMoveValid(move, movesTable)
 end
 
 function InputHandler:Initialize(client)
-	self.client = client
-	self.board = client.BoardObject
-	self.selected = false
-	self.selectedPiece = nil
-	self.moves = {}
+	self.Client = client
+	self.Board = client.BoardObject
+	self.SelectedPiece = nil
+	self.Moves = {}
 
 	UIS.InputBegan:Connect(function(input, processedByUi)
 		if processedByUi then
@@ -128,14 +128,14 @@ end
 
 function InputHandler:CreateHighlight(spot, color)
 	local highlight = selection:Clone()
-	local piece = self.board:GetPieceObjectAtSpot(spot)
+	local piece = self.Board:GetPieceObjectAtSpot(spot)
 	local coordsOfSpot = string.split(spot.Name, "")
 
 	if piece and piece.Team ~= plr.Team.Name then
 		highlight.Color = color or InputHandler.Colors.Attack
-	elseif not piece and self.selectedPiece and self.selectedPiece.Type == "Pawn" then
+	elseif not piece and self.SelectedPiece and self.SelectedPiece.Type == "Pawn" then
 		--En Passant
-		local letterDiffFromTargetSpot = math.abs(byte(coordsOfSpot[1]) - byte(self.selectedPiece.Letter))
+		local letterDiffFromTargetSpot = math.abs(byte(coordsOfSpot[1]) - byte(self.SelectedPiece.Letter))
 
 		if letterDiffFromTargetSpot == 1 then
 			print("En passant")
@@ -153,8 +153,9 @@ function InputHandler:CreateHighlight(spot, color)
 	TS:Create(highlight, TweenInfo.new(0.1), { Transparency = 0.1 }):Play()
 end
 
-function InputHandler:HighlightMoves(moves)
-	for _, spot in pairs(self.moves) do
+function InputHandler:HighlightMoves()
+	for _, move in pairs(self.Moves) do
+		local spot = self.Board:GetSpotObjectAt(move.TargetPosLetter, move.TargetPosNumber)
 		if type(spot) == "userdata" then
 			self:CreateHighlight(spot)
 		else
@@ -168,71 +169,69 @@ function InputHandler:HandleMove(pieceSpotName, targetSpotName)
 end
 
 function InputHandler:HandleInput(target)
-	if not target or self.client.IsUpdating then
+	if not target or self.Client.IsUpdating then
 		self:ClearHighlights()
 		return
 	end
 
 	if target.Parent.Name == "Board" then
 		--If target is a spot
-		local piece = self.board:GetPieceObjectAtSpot(target)
+		local piece = self.Board:GetPieceObjectAtSpot(target)
 
 		if piece then
-			if self.selected == true then
-				if InputHandler.IsMoveValid(target, self.moves) then
+			if self.SelectedPiece then
+				if self:IsMoveValid(target) then
 					self:ClearEventIndicators()
-					self:HandleMove(self.selectedPiece.Spot.Instance.Name, target.Name)
+					self:HandleMove(self.SelectedPiece.Spot.Instance.Name, target.Name)
 				end
 				self:ClearHighlights()
-				self.selected = false
-				self.moves = {}
-				self.selectedPiece = false
+
+				self.Moves = {}
+				self.SelectedPiece = false
 			else
 				if piece.Team == plr.Team.Name then
 					self:CreateHighlight(target, InputHandler.Colors["Indicator1"])
-					self.selectedPiece = piece
-					self.selected = true
-					self.moves = piece:GetMoves()
-					self:HighlightMoves(self.moves)
+					self.SelectedPiece = piece
+					self.Moves = piece:GetMoves()
+					self:HighlightMoves(self.Moves)
 				end
 			end
 		else
-			if self.selected == true then
-				if InputHandler.IsMoveValid(target, self.moves) then
+			if self.SelectedPiece then
+				print(self.Moves)
+				if self:IsMoveValid(target) then
 					self:ClearEventIndicators()
-					self:HandleMove(self.selectedPiece.Spot.Instance.Name, target.Name)
+					self:HandleMove(self.SelectedPiece.Spot.Instance.Name, target.Name)
 				end
 				self:ClearHighlights()
-				self.selected = false
-				self.moves = {}
-				self.selectedPiece = nil
+				self.Moves = {}
+				self.SelectedPiece = nil
 			else
 				self:ClearHighlights()
 			end
 		end
 	elseif target.Parent.Name == "White" or target.Parent.Name == "Black" then
 		--If target is a piece
-		local piece = self.board:GetPieceObjectFromInstance(target)
+		local piece = self.Board:GetPieceObjectFromInstance(target)
 
 		if not piece then
 			error("Piece object wasn't found")
 		end
-		if self.selected == true then
-			if InputHandler.IsMoveValid(piece.Spot.Instance, self.moves) == true then
+		if self.SelectedPiece then
+			if self:IsMoveValid(piece.Spot.Instance) == true then
 				self:ClearEventIndicators()
-				self:HandleMove(self.selectedPiece.Spot.Instance.Name, piece.Spot.Instance.Name)
+				self:HandleMove(self.SelectedPiece.Spot.Instance.Name, piece.Spot.Instance.Name)
 			end
 			self:ClearHighlights()
-			self.selected = false
-			self.moves = {}
-			self.selectedPiece = nil
+			self.Moves = {}
+			self.SelectedPiece = nil
 		else
 			if piece.Team == plr.Team.Name then
 				self:CreateHighlight(piece.Spot.Instance, InputHandler.Colors["Indicator1"])
-				self.selectedPiece = piece
-				self.selected = true
-				self.moves = piece:GetMoves()
-				self:HighlightMoves(self.moves)
+				self.SelectedPiece = piece
+
+				self.Moves = piece:GetMoves()
+				self:HighlightMoves()
 			end
 		end
 	else
@@ -242,7 +241,7 @@ function InputHandler:HandleInput(target)
 end
 
 function InputHandler:ClearEventIndicators()
-	for i, indicator in pairs(workspace["EventIndicators"]:GetChildren()) do
+	for _, indicator in pairs(workspace["EventIndicators"]:GetChildren()) do
 		indicator:Destroy()
 	end
 end

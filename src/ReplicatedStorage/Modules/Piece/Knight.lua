@@ -1,4 +1,8 @@
 local RS = game:GetService("ReplicatedStorage")
+
+local Modules = RS:WaitForChild("Modules")
+local Move = require(Modules:WaitForChild("Move"))
+
 local PieceModels = RS:WaitForChild("PieceModels")
 
 local Piece = require(script.Parent)
@@ -46,11 +50,11 @@ function Knight:GetMoves()
 	for i = lnum - 1,lnum + 1 do
 		if i ~= lnum then
 			local spot = Board:GetSpotObjectAt(char(i), q)
+			
 			if spot then
-				if not spot.Piece then
-					insert(moves, spot)
-				elseif spot.Piece.Team == oppTeam then
-					insert(moves, spot)
+				if not spot.Piece or (spot.Piece.Team == oppTeam) then
+					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+					insert(moves, move)
 				end
 			end
 		end
@@ -61,10 +65,9 @@ function Knight:GetMoves()
 		if i ~= lnum then
 			local spot = Board:GetSpotObjectAt(char(i), q)
 			if spot then
-				if not spot.Piece then
-					insert(moves, spot)
-				elseif spot.Piece.Team == oppTeam then
-					insert(moves, spot)
+				if not spot.Piece or (spot.Piece.Team == oppTeam) then
+					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+					insert(moves, move)
 				end
 			end
 		end
@@ -75,10 +78,9 @@ function Knight:GetMoves()
 		if i ~= num(number) then
 			local spot = Board:GetSpotObjectAt(char(q), i)
 			if spot then
-				if not spot.Piece then
-					insert(moves, spot)
-				elseif spot.Piece.Team == oppTeam then
-					insert(moves, spot)
+				if not spot.Piece or (spot.Piece.Team == oppTeam) then
+					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+					insert(moves, move)
 				end
 			end
 		end
@@ -90,10 +92,9 @@ function Knight:GetMoves()
 		if i ~= num(number) then
 			local spot = Board:GetSpotObjectAt(char(q), i)
 			if spot then
-				if not spot.Piece then
-					insert(moves, spot)
-				elseif spot.Piece.Team == oppTeam then
-					insert(moves, spot)
+				if not spot.Piece or (spot.Piece.Team == oppTeam) then
+					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+					insert(moves, move)
 				end
 			end
 		end

@@ -1,4 +1,8 @@
 local RS = game:GetService("ReplicatedStorage")
+
+local Modules = RS:WaitForChild("Modules")
+local Move = require(Modules:WaitForChild("Move"))
+
 local PieceModels = RS:WaitForChild("PieceModels")
 
 local Piece = require(script.Parent)
@@ -48,13 +52,15 @@ function Rook:GetMoves()
 
 	for i = self.Number + 1, 8 do
 		local spot = Board:GetSpotObjectAt(self.Letter, i)
+		
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				if spot.Piece.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end
@@ -68,13 +74,15 @@ function Rook:GetMoves()
 	
 	for i = self.Number - 1, 1, -1 do
 		local spot = Board:GetSpotObjectAt(self.Letter, i)
+		
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				if spot.Piece.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end
@@ -88,13 +96,15 @@ function Rook:GetMoves()
 	
 	for i = lnum - 1, 65, -1 do
 		local spot = Board:GetSpotObjectAt(char(i), self.Number)
+		
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				if spot.Piece.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end
@@ -110,12 +120,13 @@ function Rook:GetMoves()
 		local spot = Board:GetSpotObjectAt(char(i), self.Number)
 		
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				if spot.Piece.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end
@@ -124,7 +135,7 @@ function Rook:GetMoves()
 			end
 		end
 	end
-	return moves--,MovesBtwn
+	return moves    --,MovesBtwn
 end
 
 return Rook

@@ -248,7 +248,7 @@ end
 function ChessBoard:WillMoveCauseCheck(initSpotCoordinates, targetSpotCoordinates)
 	--local move = self:SimulateMove(initSpotCoordinates, targetSpotCoordinates)
 	local isCheck = false
-	-- if (self:IsCheck(move.movedPiece.Team)) then
+	-- if (self:IsCheck(move.MovedPiece.Team)) then
 	-- 	isCheck = true
 	-- end
 
@@ -283,13 +283,18 @@ function ChessBoard:IsSpotUnderAttack(team, arg1, arg2)
 	local spot = self:GetSpotObjectAt(arg1, arg2)
 	local oppTeam = team == "Black" and "White" or "Black"
 	local attackingPieces = self[oppTeam .. "Pieces"]
-
+	
 	for _, attackingPiece in pairs(attackingPieces) do
 		if attackingPiece.Captured then
 			--remove(attackingPieces, table.find(attackingPieces, attackingPiece))
 			continue
 		end
 		local moves = attackingPiece:GetMoves({onlyAttacks = true})
+		
+		if (attackingPiece.Type == "Queen") then
+			print(moves)
+		end
+		
 		for _, move in pairs(moves) do
 			if spot.Letter == move.Letter and spot.Number == move.Number then
 				return true
@@ -302,25 +307,25 @@ end
 
 --CLIENT ONLY
 function ChessBoard:Update(move)
-	local castlingRookMoves = move.castlingMoves
+	local castlingRookMoves = move.CastlingMoves
 
 	--If the move involves castling
 	if castlingRookMoves then
-		local castlingRook = self:GetPieceObjectAtSpot(castlingRookMoves.initPosLetter, castlingRookMoves.initPosNum)
-		local castlingKing = self:GetPieceObjectAtSpot(move.initPosLetter, move.initPosNum)
+		local castlingRook = self:GetPieceObjectAtSpot(castlingRookMoves.InitPosLetter, castlingRookMoves.InitPosNumber)
+		local castlingKing = self:GetPieceObjectAtSpot(move.InitPosLetter, move.InitPosNumber)
 
 		castlingKing:Castle(castlingRook)
 
 		return false -- Don't do the rest (already done)
 	end
 
-	local targetSpot = self:GetSpotObjectAt(move.targetPosLetter, move.targetPosNum)
-	local initSpot = self:GetSpotObjectAt(move.initPosLetter, move.initPosNum)
+	local targetSpot = self:GetSpotObjectAt(move.TargetPosLetter, move.TargetPosNumber)
+	local initSpot = self:GetSpotObjectAt(move.InitPosLetter, move.InitPosNumber)
 	local initPiece = initSpot.Piece
 
 	--If the move is En Passant
-	if move.isEnPassant then
-		local letterDiffFromTargetSpot = byte(move.targetPosLetter) - byte(initPiece.Letter)
+	if move.IsEnPassant then
+		local letterDiffFromTargetSpot = byte(move.TargetPosLetter) - byte(initPiece.Letter)
 
 		local pieceOnSide = self:GetPieceObjectAtSpot(
 			char(byte(initPiece.Letter) + letterDiffFromTargetSpot),
@@ -329,7 +334,7 @@ function ChessBoard:Update(move)
 		local pieceOnSideIsPawn = pieceOnSide and (pieceOnSide.Type == "Pawn") or nil
 
 		if pieceOnSideIsPawn then
-			local targetSpot = self:GetSpotObjectAt(move.targetPosLetter, move.targetPosNum)
+			local targetSpot = self:GetSpotObjectAt(move.TargetPosLetter, move.TargetPosNumber)
 			move = initPiece:EnPassant(pieceOnSide, targetSpot)
 		end
 

@@ -1,5 +1,8 @@
 local RS = game:GetService("ReplicatedStorage")
 
+local Modules = RS:WaitForChild("Modules")
+local Move = require(Modules:WaitForChild("Move"))
+
 local Piece = require(script.Parent)
 
 local PieceModels = RS:WaitForChild("PieceModels")
@@ -51,14 +54,17 @@ function Bishop:GetMoves()
 	
 	for i = lnum + 1,72 do
 		local spot = self.Board:GetSpotObjectAt(char(i), q)
+		
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				local occ = spot.Piece
 				if occ.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end
@@ -72,14 +78,17 @@ function Bishop:GetMoves()
 	q = number + 1
 	for i = lnum - 1,65,-1 do
 		local spot = self.Board:GetSpotObjectAt(char(i), q)
+
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				local occ = spot.Piece
 				if occ.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end
@@ -93,14 +102,17 @@ function Bishop:GetMoves()
 	q = number - 1
 	for i = lnum + 1,72 do
 		local spot = self.Board:GetSpotObjectAt(char(i), q)
+
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				local occ = spot.Piece
 				if occ.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end
@@ -115,14 +127,17 @@ function Bishop:GetMoves()
 	q = number - 1
 	for i = lnum - 1,65,-1 do
 		local spot = self.Board:GetSpotObjectAt(char(i), q)
+		
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+			
 			if not spot.Piece then
-				insert(moves,spot)
+				insert(moves,move)
 				--insert(TempMoves,spot)
 			else
 				local occ = spot.Piece
 				if occ.Team == oppTeam then
-					insert(moves,spot)
+					insert(moves,move)
 					--if occ.Name == "King" then
 					--	MovesBtwn = TempMoves
 					--end

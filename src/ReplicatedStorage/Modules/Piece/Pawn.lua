@@ -73,7 +73,8 @@ function Pawn:GetMoves(options)
 			local spot = self.Board:GetSpotObjectAt(self.Letter .. n)
 			if spot then
 				if not spot.Piece then
-					insert(moves, spot)
+					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
+					insert(moves, move)
 				else
 					break
 				end
@@ -83,22 +84,24 @@ function Pawn:GetMoves(options)
 
 	for i = lnum - factor, lnum + factor, factor * 2 do
 		local spot = self.Board:GetSpotObjectAt(char(i) .. self.Number + factor)
+		
 		if spot then
+			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
 			if onlyAttacks then
 				--For pawns the attacks should be added even though there is no piece at the target
-				insert(moves, spot)
+				insert(moves, move)
 				continue
 			end
 			
 			if spot.Piece and (spot.Piece.Team == oppTeam) then
-				insert(moves, spot)
+				insert(moves, move)
 			else
 				--En Passant
 				local spotOnSide = self.Board:GetSpotObjectAt(char(i) .. self.Number)
 				local pieceOnSide = spotOnSide.Piece
 				
 				local lastMove = self.Board:GetLastMove()
-				local lastMoveTargetSpot = self.Board:GetSpotObjectAt(lastMove.targetPosLetter, lastMove.targetPosNum)
+				local lastMoveTargetSpot = self.Board:GetSpotObjectAt(lastMove.TargetPosLetter, lastMove.TargetPosNumber)
 				local lastMoveWasPawnMove = (lastMoveTargetSpot == spotOnSide)
 			
 				if
@@ -108,34 +111,12 @@ function Pawn:GetMoves(options)
 					and pieceOnSide.CanBeKilledByEnPassant
 					and lastMoveWasPawnMove
 				then
-					insert(moves, spot)
+					move:SetIsEnPassant(true)
+					insert(moves, move)
 				end
 			end
 		end
 	end
-	--En Passant
-
-	-- local spot_s = { (char(lnum + 1) .. self.Number), (char(lnum - 1) .. self.Number) }
-	-- for _, spot_coord in pairs(spot_s) do
-	-- 	local spot = self.Board:GetSpotObjectAt(spot_coord)
-	-- 	if not spot then
-	-- 		continue
-	-- 	end
-	-- 	local piece = spot.Piece
-	-- 	--print(piece)
-	-- 	local lastMove = self.Board:GetLastMove()
-	-- 	local lastMoveTargetSpot = self.Board:GetSpotObjectAt(lastMove.targetPosLetter, lastMove.targetPosNum)
-	-- 	local lastMoveWasPawnMove = (lastMoveTargetSpot == spot)
-
-	-- 	if piece and piece.Type == "Pawn" and piece.CanBeKilledByEnPassant and lastMoveWasPawnMove then
-	-- 		if onlyAttacks then
-	-- 			insert(moves, spot)
-	-- 		else
-	-- 			local spotBehindEnemyPawn = self.Board:GetSpotObjectAt(spot.Letter, spot.Number + (1 * factor))
-	-- 			insert(moves, spotBehindEnemyPawn)
-	-- 		end
-	-- 	end
-	-- end
 
 	if not bypassCheckCondition then
 		for i = #moves, 1, -1 do
@@ -195,11 +176,11 @@ function Pawn:EnPassant(pawnToBeCaptured, targetSpot, options)
 		end
 	end
 	local move = Move.new()
-		:SetInitPos(initSpot.Letter, initSpot.Number)
-		:SetTargetPos(targetSpot.Letter, targetSpot.Number)
+		:SetInitSpot(initSpot)
+		:SetTargetSpot(targetSpot)
 		:SetMovedPiece(self)
 		:SetCapturedPiece(pawnToBeCaptured)
-		:SetEnPassant(true)
+		:SetIsEnPassant(true)
 
 	return move
 end
