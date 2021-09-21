@@ -12,10 +12,10 @@ local Piece = {}
 Piece.__index = Piece
 
 Piece.Number = 0
-Piece.Letter = ''
-Piece.Team = ''
+Piece.Letter = ""
+Piece.Team = ""
 
-function Piece.new(spot, team, createInstance) 
+function Piece.new(spot, team, createInstance)
 	local self = {}
 
 	self.Spot = spot
@@ -47,7 +47,9 @@ function Piece:GetOppTeam()
 	return "White"
 end
 
-function Piece:MoveTo(arg1, arg2)
+function Piece:MoveTo(arg1, arg2, options)
+	local simulatedMove = options and options.simulatedMove or nil
+
 	local targetSpot
 	if typeof(arg1) == "Instance" then
 		targetSpot = arg1
@@ -60,7 +62,7 @@ function Piece:MoveTo(arg1, arg2)
 
 	if initOccupyingPiece then
 		initOccupyingPiece.Captured = true
-		initOccupyingPiece.Spot = nil			
+		initOccupyingPiece.Spot = nil
 		initOccupyingPiece.Number = nil
 		initOccupyingPiece.Letter = nil
 	end
@@ -72,11 +74,12 @@ function Piece:MoveTo(arg1, arg2)
 	self.Number = targetSpot.Number
 	self.Letter = targetSpot.Letter
 
-	if self.Type == "Pawn" then 
+	if self.Type == "Pawn" then
 		local diffBetweenInitialAndTargetSpotNum = math.abs(targetSpot.Number - initSpot.Number)
 		if not self.HasMoved and diffBetweenInitialAndTargetSpotNum == 2 and not self.CanBeKilledByEnPassant then
 			self.CanBeKilledByEnPassant = true
-		else if self.CanBeKilledByEnPassant then
+		else
+			if self.CanBeKilledByEnPassant then
 				self.CanBeKilledByEnPassant = false
 			end
 		end
@@ -84,38 +87,36 @@ function Piece:MoveTo(arg1, arg2)
 
 	self.HasMoved = true
 
-	if self.isServer then
-		
-		if initOccupyingPiece then
-			initOccupyingPiece.Instance.Parent = workspace:WaitForChild("Captured" .. initOccupyingPiece.Team)
-		end
-		
-	else
-		local tweenDuration = Config.PieceTween.Duration
-		local tweenEasingStyle = Config.PieceTween.EasingStyle
-		
-		local Offset = (self.Instance.Size.Y/2) + (targetSpot.Instance.Size.Y/2)
-		local Pos = targetSpot.Instance.Position + Vector3.new(0,Offset,0)
-		local tween = TS:Create(self.Instance,TweenInfo.new(tweenDuration, tweenEasingStyle),{Position = Pos})
-		
-		task.spawn(function()
-			tween:Play()
-			tween.Completed:Wait(5)
+	if not simulatedMove then
+		if self.isServer then
+			if initOccupyingPiece then
+				initOccupyingPiece.Instance.Parent = workspace:WaitForChild("Captured" .. initOccupyingPiece.Team)
+			end
+		else
+			local tweenDuration = Config.PieceTween.Duration
+			local tweenEasingStyle = Config.PieceTween.EasingStyle
 
-			OnClientTween:FireServer(self.Instance, Pos)
-		end)
-		
-		return true -- no need to do the rest if on client
+			local Offset = (self.Instance.Size.Y / 2) + (targetSpot.Instance.Size.Y / 2)
+			local Pos = targetSpot.Instance.Position + Vector3.new(0, Offset, 0)
+			local tween = TS:Create(self.Instance, TweenInfo.new(tweenDuration, tweenEasingStyle), { Position = Pos })
+
+			task.spawn(function()
+				tween:Play()
+				tween.Completed:Wait(5)
+
+				OnClientTween:FireServer(self.Instance, Pos)
+			end)
+
+			return true -- no need to do the rest if on client
+		end
 	end
-	
 	local move = Move.new()
-	:SetInitPos(initSpot.Letter , initSpot.Number)
-	:SetTargetPos(targetSpot.Letter , targetSpot.Number)
-	:SetMovedPiece(self)
-	:SetCapturedPiece(initOccupyingPiece)
+		:SetInitPos(initSpot.Letter, initSpot.Number)
+		:SetTargetPos(targetSpot.Letter, targetSpot.Number)
+		:SetMovedPiece(self)
+		:SetCapturedPiece(initOccupyingPiece)
 
 	return move
-	
 end
 
 function Piece:GetMoves() end

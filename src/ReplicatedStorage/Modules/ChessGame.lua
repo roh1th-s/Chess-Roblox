@@ -71,7 +71,7 @@ function ChessGame.new()
 	self.requestMoveEvent = RequestMove.OnServerEvent:Connect(function(plr, pieceSpotName, targetSpotName)
 		local pieceSpotCoordinates = pieceSpotName:split("")
 		local targetSpotCoordinates = targetSpotName:split("")
-
+		print(pieceSpotCoordinates)
 		local move = self.currentBoard:MakeMove(pieceSpotCoordinates, targetSpotCoordinates)
 		
 		ClientUpdate:FireAllClients(move:CreateSendableObject())

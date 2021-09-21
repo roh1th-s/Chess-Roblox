@@ -118,11 +118,17 @@ function King:Castle(rook)
 	return move
 end
 
-function King:GetMoves(onlyAttacks)
+function King:GetMoves(options)
 	local moves = {}
 	local oppTeam = self:GetOppTeam()
 	local lnum = byte(self.Letter)
 	local number = num(self.Number)
+	
+	local onlyAttacks, bypassCheckCondition
+	if options then
+		onlyAttacks = options.onlyAttacks or nil
+		bypassCheckCondition = options.bypassCheckCondition or nil
+	end
 	
 	for i = number - 1,number + 1 do
 		for q = lnum - 1,lnum + 1 do
