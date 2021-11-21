@@ -81,16 +81,22 @@ function Move:SetIsEnPassant(isEnPassant)
     return self
 end
 
-function Move:SetIsPromotion(isPromotion, promotedPiece)
+function Move:SetIsPromotion(isPromotion, promotedPiece, newPieceInstance)
 	self.IsPromotion = isPromotion	
 
-	self.promotedPiece = promotedPiece
+	self.PromotedPiece = promotedPiece
+    self.NewPieceInstance = newPieceInstance
+
+    return self
 end
 
 function Move:CreateSendableObject()
     local sendableMove = {}
 
-    for key, value in pairs(self) do sendableMove[key] = value end
+    --clone table
+    for key, value in pairs(self) do 
+        sendableMove[key] = value 
+    end
 
     sendableMove.MovedPiece = nil
     sendableMove.CapturedPiece = nil

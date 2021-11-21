@@ -189,7 +189,9 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates)
 			print(self.Game)
 			local promotedPiece = self.Game:PromptPromotion(piece.Team)
 
-			print(promotedPiece)
+			local targetSpot = self:GetSpotObjectAt(targetSpotCoordinates[1], targetSpotCoordinates[2])
+			move = piece:Promote(promotedPiece, targetSpot)
+			print("Pawn promoted to " .. promotedPiece)
 		end
 	end
 
@@ -258,11 +260,11 @@ function ChessBoard:WillMoveCauseCheck(initSpotCoordinates, targetSpotCoordinate
 end
 
 function ChessBoard:GetLastMove()
-	return self.LastMove
+	return self.LastMove or {}
 end
 
 function ChessBoard:GetLastSimulatedMove()
-	return self.LastSimulatedMove
+	return self.LastSimulatedMove or {}
 end
 
 --SERVER ONLY
@@ -344,9 +346,19 @@ function ChessBoard:Update(move)
 		return false
 	end
 
+	if move.IsPromotion then
+		if initPiece.Type ~= "Pawn" then
+			return
+		end --idek why
+
+		move = initPiece:Promote(move.PromotedPiece, targetSpot, { newPieceInstance = move.NewPieceInstance })
+
+		return false
+	end
+
 	initPiece:MoveTo(targetSpot.Letter, targetSpot.Number)
 
-	self.LastMove = move
+	self.LastMove = move -- this is not really required as of now (but its there)
 end
 
 function ChessBoard:GetSpotObjectAt(arg1, arg2)

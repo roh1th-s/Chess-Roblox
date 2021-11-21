@@ -131,9 +131,12 @@ function Piece:FilterLegalMoves(moves)
 end
 
 function Piece:Destroy()
+	--TODO Test this function
+
 	local spot = self.Spot
 	local board = spot.Board
 	local pieces = board[self.Team .. "Pieces"]
+
 	if spot then
 		spot:SetPiece(nil)
 	end
@@ -147,7 +150,11 @@ function Piece:Destroy()
 		end
 	end
 
-	
+	if self.Instance then
+		self.Instance:Destroy()
+		self.Instance = nil
+	end
+
 	self = nil
 end
 
