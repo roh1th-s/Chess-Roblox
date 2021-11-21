@@ -1438,7 +1438,7 @@ function BaseCamera:GetVRRotationInput()
 			self.vrRotateKeyCooldown[Enum.KeyCode.Right] = true
 		end
 	else
-		self.vrRotateKeyCooldown[Enum.KeyCode.Right] = nil
+		self.vrRotateKeyCooldown[Enum.KeyCode.Right] = nil 
 	end
 
 	if vrRotateSum ~= ZERO_VECTOR2 then

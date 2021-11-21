@@ -8,6 +8,8 @@ local Config = require(Modules:WaitForChild("Config"))
 local Remotes = RS:WaitForChild("Remotes")
 local OnClientTween = Remotes:WaitForChild("OnClientTween")
 
+local remove = table.remove
+
 local Piece = {}
 Piece.__index = Piece
 
@@ -48,7 +50,7 @@ function Piece:GetOppTeam()
 end
 
 function Piece:MoveTo(arg1, arg2, options)
-	local simulatedMove = options and options.simulatedMove or nil
+	local simulatedMove = options and options.simulatedMove or false
 
 	local targetSpot
 	if typeof(arg1) == "Instance" then
@@ -117,6 +119,36 @@ function Piece:MoveTo(arg1, arg2, options)
 		:SetCapturedPiece(initOccupyingPiece)
 
 	return move
+end
+
+function Piece:FilterLegalMoves(moves)
+	for i = #moves, 1, -1 do
+		local move = moves[i]
+		if self.Board:WillMoveCauseCheck({ self.Letter, self.Number }, { move.Letter, move.Number }) then
+			remove(moves, i)
+		end
+	end
+end
+
+function Piece:Destroy()
+	local spot = self.Spot
+	local board = spot.Board
+	local pieces = board[self.Team .. "Pieces"]
+	if spot then
+		spot:SetPiece(nil)
+	end
+
+	--[[ not accounting for the kings table in the board object (because kings are never going to be destroyed anyway
+	and im lazy) ]]
+	for i, piece in pairs(pieces) do
+		if piece == self then
+			remove(pieces, i)
+			break
+		end
+	end
+
+	
+	self = nil
 end
 
 function Piece:GetMoves() end

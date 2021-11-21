@@ -42,7 +42,12 @@ end
 	--TODO Implement
 --end
 
-function Rook:GetMoves() 
+function Rook:GetMoves(options) 
+	local bypassCheckCondition
+	if options then
+		bypassCheckCondition = options.bypassCheckCondition or false
+	end
+
 	local moves = {} --oppTeam is temporary
 	local MovesBtwn = {}
 	local TempMoves = {}
@@ -135,6 +140,11 @@ function Rook:GetMoves()
 			end
 		end
 	end
+
+	if not bypassCheckCondition then
+		self:FilterLegalMoves(moves)
+	end
+
 	return moves    --,MovesBtwn
 end
 

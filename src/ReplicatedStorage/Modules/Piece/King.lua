@@ -46,7 +46,9 @@ end
 --function King:MoveTo(letter,number)
 --TODO Implement
 --end
-function King:Castle(rook)
+function King:Castle(rook, options)
+	local simulatedMove = options and options.simulatedMove or false
+
 	local kingTargetSpotLetter = rook.Letter == "A" and "C" or "G"
 	local rookTargetSpotLetter = rook.Letter == "A" and "D" or "F"
 
@@ -71,45 +73,47 @@ function King:Castle(rook)
 	rook.Letter = rookTargetSpot.Letter
 	rook.HasMoved = true
 
-	if not self.isServer then
-		local tweenDuration = Config.PieceTween.Duration
-		local tweenEasingStyle = Config.PieceTween.EasingStyle
+	if not simulatedMove then
+		if not self.isServer then
+			local tweenDuration = Config.PieceTween.Duration
+			local tweenEasingStyle = Config.PieceTween.EasingStyle
 
-		--Moving king
-		local Offset = (self.Instance.Size.Y / 2) + (kingTargetSpot.Instance.Size.Y / 2)
-		local KingPos = kingTargetSpot.Instance.Position + Vector3.new(0, Offset, 0)
+			--Moving king
+			local Offset = (self.Instance.Size.Y / 2) + (kingTargetSpot.Instance.Size.Y / 2)
+			local KingPos = kingTargetSpot.Instance.Position + Vector3.new(0, Offset, 0)
 
-		local kingTween = TS:Create(
-			self.Instance,
-			TweenInfo.new(tweenDuration, tweenEasingStyle),
-			{ Position = KingPos }
-		)
+			local kingTween = TS:Create(
+				self.Instance,
+				TweenInfo.new(tweenDuration, tweenEasingStyle),
+				{ Position = KingPos }
+			)
 
-		--Moving rook
-		local Offset = (rook.Instance.Size.Y / 2) + (rookTargetSpot.Instance.Size.Y / 2)
-		local RookPos = rookTargetSpot.Instance.Position + Vector3.new(0, Offset, 0)
+			--Moving rook
+			local Offset = (rook.Instance.Size.Y / 2) + (rookTargetSpot.Instance.Size.Y / 2)
+			local RookPos = rookTargetSpot.Instance.Position + Vector3.new(0, Offset, 0)
 
-		local rookTween = TS:Create(
-			rook.Instance,
-			TweenInfo.new(tweenDuration, tweenEasingStyle),
-			{ Position = RookPos }
-		)
+			local rookTween = TS:Create(
+				rook.Instance,
+				TweenInfo.new(tweenDuration, tweenEasingStyle),
+				{ Position = RookPos }
+			)
 
-		task.spawn(function()
-			kingTween:Play()
-			rookTween:Play()
+			task.spawn(function()
+				kingTween:Play()
+				rookTween:Play()
 
-			if not rookTween.PlaybackState == Enum.PlaybackState.Completed then
-				rookTween.Completed:Wait(5)
-			end
+				if not rookTween.PlaybackState == Enum.PlaybackState.Completed then
+					rookTween.Completed:Wait(5)
+				end
 
-			OnClientTween:FireServer(self.Instance, KingPos)
-			OnClientTween:FireServer(rook.Instance, RookPos)
-		end)
+				OnClientTween:FireServer(self.Instance, KingPos)
+				OnClientTween:FireServer(rook.Instance, RookPos)
+			end)
 
-		return true -- no need to do the rest if on client
+			return true -- no need to do the rest if on client
+		end
 	end
-
+	
 	local castlingMoves = {
 		["InitPosLetter"] = initRookSpot.Letter,
 		["InitPosNumber"] = initRookSpot.Number,
@@ -190,6 +194,10 @@ function King:GetMoves(options)
 				end
 			end
 		end
+	end
+
+	if not bypassCheckCondition then
+		self:FilterLegalMoves(moves)
 	end
 
 	return moves

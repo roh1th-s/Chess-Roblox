@@ -38,7 +38,13 @@ function Knight.new(...)
 	return self
 end
 
-function Knight:GetMoves()
+function Knight:GetMoves(options)
+	local bypassCheckCondition
+	if options then
+		bypassCheckCondition = options.bypassCheckCondition or false
+	end
+
+
 	local moves = {}
 	local oppTeam = self:GetOppTeam()
 	local number = self.Number
@@ -98,6 +104,10 @@ function Knight:GetMoves()
 				end
 			end
 		end
+	end
+
+	if not bypassCheckCondition then
+		self:FilterLegalMoves(moves)
 	end
 
 	return moves

@@ -82,7 +82,7 @@ function ChessBoard.new(isClient, currentGame)
 	self.WhitePieces = {}
 	self.BlackPieces = {}
 
-	self.LastMove = {}
+	self.LastMove = nil
 	self.LastSimulatedMove = nil
 
 	if isClient then
@@ -187,7 +187,9 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates)
 		local lastRankForTeam = piece.Team == "White" and "8" or "1"
 		if targetSpotCoordinates[2] == lastRankForTeam then
 			print(self.Game)
-			self.Game:PromptPromotion(piece.Team)
+			local promotedPiece = self.Game:PromptPromotion(piece.Team)
+
+			print(promotedPiece)
 		end
 	end
 
@@ -394,7 +396,7 @@ end
 
 function ChessBoard:GetPieceObjectAtSpot(arg1, arg2)
 	local letter, number = arg1, arg2
-	print(arg1,arg2)
+	print(arg1, arg2)
 	if type(arg1) == "userdata" then
 		local tile = arg1
 		local coordinates = tile.Name:split("")

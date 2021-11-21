@@ -42,7 +42,13 @@ end
     --TODO Implement
 --end
 
-function Bishop:GetMoves()
+function Bishop:GetMoves(options)
+	local bypassCheckCondition
+	if options then
+		bypassCheckCondition = options.bypassCheckCondition or false
+	end
+
+
 	local moves = {}
 	local MovesBtwn = {}
 	local TempMoves = {}
@@ -148,6 +154,10 @@ function Bishop:GetMoves()
 		q = q - 1
 	end
 	
+	if not bypassCheckCondition then
+		self:FilterLegalMoves(moves)
+	end
+
 	return moves
 end
 

@@ -42,8 +42,12 @@ end
 	--TODO Implement
 --end
 
-function Queen:GetMoves()
-	local moves = {}
+function Queen:GetMoves(options)
+	local bypassCheckCondition
+	if options then
+		bypassCheckCondition = options.bypassCheckCondition or false
+	end
+
 	local moves = {}
 	local MovesBtwn = {}
 	local TempMoves = {}
@@ -240,6 +244,10 @@ function Queen:GetMoves()
 		end
 	end
 	
+	if not bypassCheckCondition then
+		self:FilterLegalMoves(moves)
+	end
+
 	return moves
 end
 

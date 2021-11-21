@@ -56,8 +56,8 @@ function Pawn:GetMoves(options)
 
 	local onlyAttacks, bypassCheckCondition
 	if options then
-		onlyAttacks = options.onlyAttacks or nil
-		bypassCheckCondition = options.bypassCheckCondition or nil
+		onlyAttacks = options.onlyAttacks or false
+		bypassCheckCondition = options.bypassCheckCondition or false
 	end
 
 	if self.Team == "Black" then
@@ -84,7 +84,7 @@ function Pawn:GetMoves(options)
 
 	for i = lnum - factor, lnum + factor, factor * 2 do
 		local spot = self.Board:GetSpotObjectAt(char(i) .. self.Number + factor)
-		
+
 		if spot then
 			local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(spot)
 			if onlyAttacks then
@@ -92,18 +92,21 @@ function Pawn:GetMoves(options)
 				insert(moves, move)
 				continue
 			end
-			
+
 			if spot.Piece and (spot.Piece.Team == oppTeam) then
 				insert(moves, move)
 			else
 				--En Passant
 				local spotOnSide = self.Board:GetSpotObjectAt(char(i) .. self.Number)
 				local pieceOnSide = spotOnSide.Piece
-				
+
 				local lastMove = self.Board:GetLastMove()
-				local lastMoveTargetSpot = self.Board:GetSpotObjectAt(lastMove.TargetPosLetter, lastMove.TargetPosNumber)
+				local lastMoveTargetSpot = self.Board:GetSpotObjectAt(
+					lastMove.TargetPosLetter,
+					lastMove.TargetPosNumber
+				)
 				local lastMoveWasPawnMove = (lastMoveTargetSpot == spotOnSide)
-			
+
 				if
 					pieceOnSide
 					and (pieceOnSide.Team == oppTeam)
@@ -119,18 +122,14 @@ function Pawn:GetMoves(options)
 	end
 
 	if not bypassCheckCondition then
-		for i = #moves, 1, -1 do
-			local move = moves[i]
-			if self.Board:WillMoveCauseCheck({ self.Letter, self.Number }, { move.Letter, move.Number }) then
-				remove(moves, i)
-			end
-		end
+		self:FilterLegalMoves(moves)
 	end
+
 	return moves
 end
 
 function Pawn:EnPassant(pawnToBeCaptured, targetSpot, options)
-	local simulatedMove = options and options.simulatedMove or nil
+	local simulatedMove = options and options.simulatedMove or false
 
 	if not pawnToBeCaptured or not targetSpot then
 		warn("Error : Incorrect arguments to en passant function.")
@@ -175,6 +174,7 @@ function Pawn:EnPassant(pawnToBeCaptured, targetSpot, options)
 			return true -- no need to do the rest if on client
 		end
 	end
+
 	local move = Move.new()
 		:SetInitSpot(initSpot)
 		:SetTargetSpot(targetSpot)
@@ -183,6 +183,10 @@ function Pawn:EnPassant(pawnToBeCaptured, targetSpot, options)
 		:SetIsEnPassant(true)
 
 	return move
+end
+
+function Pawn:Promote(promotedPiece, targetSpot, options)
+	local simulatedMove = options and options.simulatedMove or false
 end
 
 return Pawn

@@ -71,7 +71,7 @@ function InputHandler:IsMoveValid(target)
 	return false
 end
 
-function InputHandler:Initialize(client)
+function InputHandler:Init(client)
 	self.Client = client
 	self.Board = client.BoardObject
 	self.SelectedPiece = nil
