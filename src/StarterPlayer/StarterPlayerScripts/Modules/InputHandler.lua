@@ -1,14 +1,12 @@
 --services
 local RS = game:GetService("ReplicatedStorage")
 local TS = game:GetService("TweenService")
-local SSS = game:GetService("ServerScriptService")
 local UIS = game:GetService("UserInputService")
 local GUIS = game:GetService("GuiService")
 
 --events
 local Remotes = RS:WaitForChild("Remotes")
 local RequestMove = Remotes:WaitForChild("RequestMove")
-local GameEvent = Remotes:WaitForChild("GameEvent")
 
 local byte = string.byte
 
@@ -17,8 +15,6 @@ local TopBarSize = GUIS:GetGuiInset()
 local camera = workspace.CurrentCamera
 
 local fixedInputFilter = workspace.Map:GetDescendants()
-
-local WhoseTurn = workspace:WaitForChild("WhoseTurn")
 
 local InputHandler = {}
 InputHandler.__index = InputHandler
@@ -39,9 +35,12 @@ selection.CanCollide = false
 
 InputHandler.selection = selection
 
-function InputHandler.new()
+function InputHandler.new(client)
 	local self = setmetatable({}, InputHandler)
 
+	self.Client = client
+	self.Board = self.Client.BoardObject
+	
 	return self
 end
 
@@ -71,9 +70,8 @@ function InputHandler:IsMoveValid(target)
 	return false
 end
 
-function InputHandler:Init(client)
-	self.Client = client
-	self.Board = client.BoardObject
+function InputHandler:Init()
+
 	self.SelectedPiece = nil
 	self.Moves = {}
 
@@ -121,8 +119,8 @@ function InputHandler:Init(client)
 end
 
 function InputHandler:ClearHighlights()
-	for i, v in pairs(camera:GetChildren()) do
-		v:Destroy()
+	for _, highlight in pairs(camera:GetChildren()) do
+		highlight:Destroy()
 	end
 end
 
@@ -169,7 +167,7 @@ function InputHandler:HandleMove(pieceSpotName, targetSpotName)
 end
 
 function InputHandler:HandleInput(target)
-	if not target or self.Client.IsUpdating then
+	if not target or self.Client.IsUpdating or self.Client.IsPromotion then
 		self:ClearHighlights()
 		return
 	end
@@ -177,7 +175,7 @@ function InputHandler:HandleInput(target)
 	if target.Parent.Name == "Board" then
 		--If target is a spot
 		local piece = self.Board:GetPieceObjectAtSpot(target)
-
+		
 		if piece then
 			if self.SelectedPiece then
 				if self:IsMoveValid(target) then
@@ -190,15 +188,16 @@ function InputHandler:HandleInput(target)
 				self.SelectedPiece = false
 			else
 				if piece.Team == plr.Team.Name then
+					
 					self:CreateHighlight(target, InputHandler.Colors["Indicator1"])
 					self.SelectedPiece = piece
 					self.Moves = piece:GetMoves()
-					self:HighlightMoves(self.Moves)
+					self:HighlightMoves()
 				end
 			end
 		else
 			if self.SelectedPiece then
-				print(self.Moves)
+				
 				if self:IsMoveValid(target) then
 					self:ClearEventIndicators()
 					self:HandleMove(self.SelectedPiece.Spot.Instance.Name, target.Name)

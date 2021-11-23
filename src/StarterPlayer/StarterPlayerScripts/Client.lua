@@ -15,9 +15,10 @@ local Client = {}
 function Client.new()
 	local self = setmetatable({}, Client)
 
-	self.PlayerObject = Players.LocalPlayer
+	self.Player = Players.LocalPlayer
 	self.IsUpdating = false
-
+	self.IsPromotion = false
+	
 	GameEvent.OnClientEvent:Connect(function()
 		print("Client initializing..")
 
@@ -31,11 +32,11 @@ function Client.new()
 			
 			local moduleName = module.Name
 
-			module = require(module).new()
+			module = require(module).new(self)
 			self[moduleName] = module
-			module:Init(self)
+			module:Init()
 		end
- 
+
  	end)
 
 	ClientUpdate.OnClientEvent:Connect(function(move)
