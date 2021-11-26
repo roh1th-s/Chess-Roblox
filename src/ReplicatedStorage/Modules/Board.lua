@@ -1,24 +1,21 @@
-local RS = game:GetService("RunService")
-local TS = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
-local LocalizationService = game:GetService("LocalizationService")
-local SSS = game:GetService("ServerScriptService")
 
 local Modules = script.Parent
 local Piece = Modules.Piece
 
 local Spot = require(script.Parent.Spot)
-local Pawn = require(Piece.Pawn)
-local Rook = require(Piece.Rook)
-local Knight = require(Piece.Knight)
-local Bishop = require(Piece.Bishop)
-local Queen = require(Piece.Queen)
-local King = require(Piece.King)
+
+local PieceClasses = {
+	Pawn = require(Piece.Pawn),
+	Rook = require(Piece.Rook),
+	Knight = require(Piece.Knight),
+	Bishop = require(Piece.Bishop),
+	Queen = require(Piece.Queen),
+	King = require(Piece.King),
+}
 
 local Remotes = RS:WaitForChild("Remotes")
-local Promotion = Remotes:WaitForChild("Promotion")
 local getPieceSpotDictionary = Remotes:WaitForChild("GetPieceSpotDictionary")
-local gameEvent = Remotes:WaitForChild("GameEvent")
 
 local char = string.char
 local byte = string.byte
@@ -26,14 +23,14 @@ local insert = table.insert
 local remove = table.remove
 
 local _INIT_POSITIONS = {
-	["A8"] = "R",
-	["B8"] = "K",
-	["C8"] = "B",
-	["D8"] = "Q",
+	["A8"] = "Rook",
+	["B8"] = "Knight",
+	["C8"] = "Bishop",
+	["D8"] = "Queen",
 	["E8"] = "King",
-	["F8"] = "B",
-	["G8"] = "K",
-	["H8"] = "R",
+	["F8"] = "Bishop",
+	["G8"] = "Knight",
+	["H8"] = "Rook",
 	["A7"] = "Pawn",
 	["B7"] = "Pawn",
 	["C7"] = "Pawn",
@@ -51,14 +48,14 @@ local _INIT_POSITIONS = {
 	["F2"] = "Pawn",
 	["G2"] = "Pawn",
 	["H2"] = "Pawn",
-	["A1"] = "R",
-	["B1"] = "K",
-	["C1"] = "B",
-	["D1"] = "Q",
+	["A1"] = "Rook",
+	["B1"] = "Knight",
+	["C1"] = "Bishop",
+	["D1"] = "Queen",
 	["E1"] = "King",
-	["F1"] = "B",
-	["G1"] = "K",
-	["H1"] = "R",
+	["F1"] = "Bishop",
+	["G1"] = "Knight",
+	["H1"] = "Rook",
 }
 
 --Private
@@ -106,19 +103,10 @@ function ChessBoard:CreatePiece(spot)
 		team = "Black"
 	end
 
-	if PieceName == "R" then
-		PieceObject = Rook.new(spot, team, self.isServer)
-	elseif PieceName == "Pawn" then
-		PieceObject = Pawn.new(spot, team, self.isServer)
-	elseif PieceName == "King" then
-		PieceObject = King.new(spot, team, self.isServer)
+	PieceObject = PieceClasses[PieceName].new(spot, team, self.isServer)
+
+	if PieceName == "King" then
 		self.Kings[team] = PieceObject
-	elseif PieceName == "Q" then
-		PieceObject = Queen.new(spot, team, self.isServer)
-	elseif PieceName == "B" then
-		PieceObject = Bishop.new(spot, team, self.isServer)
-	elseif PieceName == "K" then
-		PieceObject = Knight.new(spot, team, self.isServer)
 	end
 
 	if not self.isServer then
@@ -147,7 +135,13 @@ function ChessBoard:Init(BoardModel)
 	end
 end
 
-function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates)
+function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates, options)
+	local simulatedMove = false
+
+	if options then
+		simulatedMove = options.simulatedMove or false
+	end
+
 	local move = nil
 
 	local piece = self:GetPieceObjectAtSpot(initSpotCoordinates[1], initSpotCoordinates[2])
@@ -161,14 +155,14 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates)
 	local absoluteNumberDiff = math.abs(letterDiffFromTargetSpot)
 
 	--Castling checks
-	if piece.Type == "King" and not piece.HasMoved and absoluteLetterDiff == 2 then
+	if piece.Type == "King" and piece.MovesMade == 0 and absoluteLetterDiff == 2 then
 		print("Castling..")
 		local rookLetter = isNegative and "A" or "H"
 		local associatedRook = self:GetPieceObjectAtSpot(rookLetter .. piece.Number)
-		move = piece:Castle(associatedRook)
+		move = piece:Castle(associatedRook, { simulatedMove = simulatedMove })
 	end
 
-	--En Passant Checks
+	--Pawn special move Checks
 	if piece.Type == "Pawn" then
 		if absoluteNumberDiff == 1 and absoluteLetterDiff == 1 then
 			local pieceAtTargetSpot = self:GetPieceObjectAtSpot(targetSpotCoordinates[1], targetSpotCoordinates[2])
@@ -180,23 +174,32 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates)
 
 			if not pieceAtTargetSpot and pieceOnSideIsPawn then
 				local targetSpot = self:GetSpotObjectAt(targetSpotCoordinates[1], targetSpotCoordinates[2])
-				move = piece:EnPassant(pieceOnSide, targetSpot)
+				move = piece:EnPassant(pieceOnSide, targetSpot, { simulatedMove = simulatedMove })
 			end
 		end
 
 		local lastRankForTeam = piece.Team == "White" and "8" or "1"
 		if targetSpotCoordinates[2] == lastRankForTeam then
-			print(self.Game)
-			local promotedPiece = self.Game:PromptPromotion(piece.Team)
+			--For now the promoted piece while simulating a move can be anything really, but this needs to be
+			--changed later if and when an ai is implemented.
+			local promotedPiece = simulatedMove and "Queen" or self.Game:PromptPromotion(piece.Team)
 
 			local targetSpot = self:GetSpotObjectAt(targetSpotCoordinates[1], targetSpotCoordinates[2])
-			move = piece:Promote(promotedPiece, targetSpot)
+			move = piece:Promote(promotedPiece, targetSpot, { simulatedMove = simulatedMove })
 			print("Pawn promoted to " .. promotedPiece)
 		end
 	end
 
 	if not move then
-		move = piece:MoveTo(targetSpotCoordinates[1], targetSpotCoordinates[2])
+		move = piece:MoveTo(targetSpotCoordinates[1], targetSpotCoordinates[2], { simulatedMove = simulatedMove })
+	end
+
+	if simulatedMove then
+		self.LastSimulatedMove = move
+		--dont do the rest if its a simulated move.
+		return move
+	else
+		self.LastMove = move
 	end
 
 	local oppTeam = piece:GetOppTeam()
@@ -205,56 +208,23 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates)
 		print("Check")
 	end
 
-	self.LastMove = move
-
 	return move
 end
 
 function ChessBoard:SimulateMove(initSpotCoordinates, targetSpotCoordinates)
-	local move = nil
-
-	local piece = self:GetPieceObjectAtSpot(initSpotCoordinates[1], initSpotCoordinates[2])
-	assert(piece, "There is no piece on the initial square!")
-
-	local letterDiffFromTargetSpot = byte(targetSpotCoordinates[1]) - byte(piece.Letter)
-	local absoluteLetterDiff = math.abs(letterDiffFromTargetSpot)
-	--local numberDiffFromTargetSpot = targetSpotCoordinates[2] - piece.Number
-	local absoluteNumberDiff = math.abs(letterDiffFromTargetSpot)
-
-	--cannot be castling
-
-	--En Passant Checks
-	if piece.Type == "Pawn" then
-		if absoluteNumberDiff == 1 and absoluteLetterDiff == 1 then
-			local pieceAtTargetSpot = self:GetPieceObjectAtSpot(targetSpotCoordinates[1], targetSpotCoordinates[2])
-			local pieceOnSide = self:GetPieceObjectAtSpot(
-				char(byte(piece.Letter) + letterDiffFromTargetSpot),
-				piece.Number
-			)
-			local pieceOnSideIsPawn = pieceOnSide and (pieceOnSide.Type == "Pawn") or nil
-
-			if not pieceAtTargetSpot and pieceOnSideIsPawn then
-				local targetSpot = self:GetSpotObjectAt(targetSpotCoordinates[1], targetSpotCoordinates[2])
-				move = piece:EnPassant(pieceOnSide, targetSpot, { simulatedMove = true })
-			end
-		end
-	end
-
-	if not move then
-		move = piece:MoveTo(targetSpotCoordinates[1], targetSpotCoordinates[2], { simulatedMove = true })
-	end
-
-	self.LastSimulatedMove = move
-
-	return move
+	return self:MakeMove(initSpotCoordinates, targetSpotCoordinates, { simulatedMove = true })
 end
 
 function ChessBoard:WillMoveCauseCheck(initSpotCoordinates, targetSpotCoordinates)
-	--local move = self:SimulateMove(initSpotCoordinates, targetSpotCoordinates)
 	local isCheck = false
-	-- if (self:IsCheck(move.MovedPiece.Team)) then
-	-- 	isCheck = true
-	-- end
+
+	local move = self:SimulateMove(initSpotCoordinates, targetSpotCoordinates)
+
+	if self:IsCheck(move.MovedPiece.Team) then
+		isCheck = true
+	end
+
+	self:UndoLastSimulatedMove()
 
 	return isCheck
 end
@@ -267,13 +237,75 @@ function ChessBoard:GetLastSimulatedMove()
 	return self.LastSimulatedMove or {}
 end
 
---SERVER ONLY
-function ChessBoard:UndoLastMove() --TODO Need to update clients
+--TODO Implement an undo move (later sometime...maybe)
+function ChessBoard:UndoLastMove()
 	local move = self.LastMove
 end
 
 function ChessBoard:UndoLastSimulatedMove()
 	local move = self.LastSimulatedMove
+
+	if not move then
+		warn("No last simulated move exists")
+		return
+	end
+
+	local movedPiece = move.MovedPiece
+	local capturedPiece = move.CapturedPiece
+	local initSpot = self:GetSpotObjectAt(move.InitPosLetter, move.InitPosNumber)
+	local targetSpot = self:GetSpotObjectAt(move.TargetPosLetter, move.TargetPosNumber)
+
+	-- this shouldn't become negative
+	movedPiece.MovesMade -= 1	
+
+	initSpot:SetPiece(movedPiece)
+	targetSpot:SetPiece(capturedPiece or nil)
+
+	movedPiece:SetSpot(initSpot)
+	if capturedPiece then
+		capturedPiece.Captured = false
+		capturedPiece:SetSpot(targetSpot)
+	end
+
+	if movedPiece.CanBeKilledByEnPassant then
+		--if it can be killed by en passant now, then it couldn't before
+		movedPiece.CanBeKilledByEnPassant = false
+	end
+
+	if move.IsEnPassant then
+		capturedPiece.CanBeKilledByEnPassant = true
+
+		local otherPawnSpotPartial = move.OtherPawnSpotPartial
+		local otherPawnSpot = self:GetSpotObjectAt(otherPawnSpotPartial.Letter, otherPawnSpotPartial.Number)
+
+		otherPawnSpot:SetPiece(capturedPiece)
+		targetSpot:SetPiece(nil)
+
+		capturedPiece.Captured = false
+		capturedPiece:SetSpot(otherPawnSpot)
+
+	elseif move.IsPromotion then
+		movedPiece.Promoted = false
+		movedPiece.Type = "Pawn"
+		setmetatable(movedPiece, PieceClasses.Pawn)
+
+		
+	elseif move.IsCastling then
+		local castlingMoves = move.CastlingMoves
+		local initRookSpot = castlingMoves.InitRookSpot
+		local targetRookSpot = castlingMoves.RookTargetSpot
+
+		local rook = self:GetPieceObjectAtSpot(targetRookSpot)
+		
+		rook.MovesMade -= 1
+
+		rook:SetSpot(initRookSpot)
+		initRookSpot:SetPiece(rook)
+		targetRookSpot:SetPiece(nil)
+
+
+	end
+
 end
 
 function ChessBoard:IsCheck(team)
@@ -293,12 +325,7 @@ function ChessBoard:IsSpotUnderAttack(team, arg1, arg2)
 			--remove(attackingPieces, table.find(attackingPieces, attackingPiece))
 			continue
 		end
-		local moves = attackingPiece:GetMoves({ onlyAttacks = true })
-
-		if attackingPiece.Type == "Queen" then
-			print(oppTeam .. "'s pieces.")
-			print(moves)
-		end
+		local moves = attackingPiece:GetMoves({ onlyAttacks = true, bypassCheckCondition = true })
 
 		for _, move in pairs(moves) do
 			if spot.Letter == move.TargetPosLetter and spot.Number == move.TargetPosNumber then
@@ -330,13 +357,10 @@ function ChessBoard:Update(move)
 
 	--If the move is En Passant
 	if move.IsEnPassant then
-		local letterDiffFromTargetSpot = byte(move.TargetPosLetter) - byte(initPiece.Letter)
+		local otherPawnSpotPartial = move.OtherPawnSpotPartial
 
-		local pieceOnSide = self:GetPieceObjectAtSpot(
-			char(byte(initPiece.Letter) + letterDiffFromTargetSpot),
-			initPiece.Number
-		)
-		local pieceOnSideIsPawn = pieceOnSide and (pieceOnSide.Type == "Pawn") or nil
+		local pieceOnSide = self:GetPieceObjectAtSpot(otherPawnSpotPartial.Letter, otherPawnSpotPartial.Number)
+		local pieceOnSideIsPawn = pieceOnSide and (pieceOnSide.Type == "Pawn") or false
 
 		if pieceOnSideIsPawn then
 			local targetSpot = self:GetSpotObjectAt(move.TargetPosLetter, move.TargetPosNumber)
@@ -408,7 +432,7 @@ end
 
 function ChessBoard:GetPieceObjectAtSpot(arg1, arg2)
 	local letter, number = arg1, arg2
-	print(arg1, arg2)
+
 	if type(arg1) == "userdata" then
 		local tile = arg1
 		local coordinates = tile.Name:split("")
@@ -418,7 +442,8 @@ function ChessBoard:GetPieceObjectAtSpot(arg1, arg2)
 		if not arg2 then
 			return self.Spots[arg1].Piece
 		end
-		return self.Spots[arg1 .. arg2].Piece
+	elseif type(arg1) == "table" then
+		return arg1.Piece
 	end
 
 	return self.Spots[letter .. number].Piece

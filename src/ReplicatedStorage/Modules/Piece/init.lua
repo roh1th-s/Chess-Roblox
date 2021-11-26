@@ -25,7 +25,7 @@ function Piece.new(spot, team, createInstance)
 	self.Number = spot.Number
 	self.Letter = spot.Letter
 	self.Captured = false
-	self.HasMoved = false
+	self.MovesMade = 0
 
 	if team == "White" then
 		self.Team = team
@@ -72,13 +72,11 @@ function Piece:MoveTo(arg1, arg2, options)
 	initSpot:SetPiece(nil)
 	targetSpot:SetPiece(self)
 
-	self.Spot = targetSpot
-	self.Number = targetSpot.Number
-	self.Letter = targetSpot.Letter
+	self:SetSpot(targetSpot)
 
 	if self.Type == "Pawn" then
 		local diffBetweenInitialAndTargetSpotNum = math.abs(targetSpot.Number - initSpot.Number)
-		if not self.HasMoved and diffBetweenInitialAndTargetSpotNum == 2 and not self.CanBeKilledByEnPassant then
+		if self.MovesMade == 0 and diffBetweenInitialAndTargetSpotNum == 2 and not self.CanBeKilledByEnPassant then
 			self.CanBeKilledByEnPassant = true
 		else
 			if self.CanBeKilledByEnPassant then
@@ -87,7 +85,7 @@ function Piece:MoveTo(arg1, arg2, options)
 		end
 	end
 
-	self.HasMoved = true
+	self.MovesMade += 1
 
 	if not simulatedMove then
 		if self.isServer then
@@ -121,10 +119,18 @@ function Piece:MoveTo(arg1, arg2, options)
 	return move
 end
 
+function Piece:SetSpot(spot)
+	self.Spot = spot
+	self.Letter = spot and spot.Letter or nil
+	self.Number = spot and spot.Number or nil
+end
+
 function Piece:FilterLegalMoves(moves)
 	for i = #moves, 1, -1 do
 		local move = moves[i]
-		if self.Board:WillMoveCauseCheck({ self.Letter, self.Number }, { move.Letter, move.Number }) then
+		if
+			self.Board:WillMoveCauseCheck({ self.Letter, self.Number }, { move.TargetPosLetter, move.TargetPosNumber })
+		then
 			remove(moves, i)
 		end
 	end
@@ -141,8 +147,8 @@ function Piece:Destroy()
 		spot:SetPiece(nil)
 	end
 
-	--[[ not accounting for the kings table in the board object (because kings are never going to be destroyed anyway
-	and im lazy) ]]
+	--not accounting for the kings table in the board object (because kings are never going to be destroyed anyway
+	-- and im lazy)
 	for i, piece in pairs(pieces) do
 		if piece == self then
 			remove(pieces, i)

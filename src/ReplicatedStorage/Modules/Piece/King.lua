@@ -63,15 +63,13 @@ function King:Castle(rook, options)
 	rookTargetSpot:SetPiece(rook)
 	kingTargetSpot:SetPiece(self)
 
-	self.Spot = kingTargetSpot
-	self.Number = kingTargetSpot.Number
-	self.Letter = kingTargetSpot.Letter
-	self.HasMoved = true
+	self:SetSpot(kingTargetSpot)
 
-	rook.Spot = rookTargetSpot
-	rook.Number = rookTargetSpot.Number
-	rook.Letter = rookTargetSpot.Letter
-	rook.HasMoved = true
+	self.MovesMade += 1
+
+	rook:SetSpot(rookTargetSpot)
+	
+	rook.MovesMade += 1
 
 	if not simulatedMove then
 		if not self.isServer then
@@ -113,19 +111,23 @@ function King:Castle(rook, options)
 			return true -- no need to do the rest if on client
 		end
 	end
-	
+
 	local castlingMoves = {
-		["InitPosLetter"] = initRookSpot.Letter,
-		["InitPosNumber"] = initRookSpot.Number,
-		["TargetPosLetter"] = rookTargetSpot.Letter,
-		["TargetPosNumber"] = rookTargetSpot.Letter,
+		InitPosLetter = initRookSpot.Letter,
+		InitPosNumber = initRookSpot.Number,
+		TargetPosLetter = rookTargetSpot.Letter,
+		TargetPosNumber = rookTargetSpot.Letter,
+
+		-- these are not sent to the client
+		InitRookSpot = initRookSpot,
+		RookTargetSpot = rookTargetSpot
 	}
 
 	local move = Move.new()
 		:SetInitSpot(initKingSpot)
 		:SetTargetSpot(kingTargetSpot)
 		:SetMovedPiece(self)
-		:SetCastlingMoves(castlingMoves)
+		:SetCastling(true, castlingMoves)
 
 	return move
 end
@@ -164,31 +166,31 @@ function King:GetMoves(options)
 
 	--local canCastle = true
 	if not onlyAttacks then
-		if not self.HasMoved and not self.Board:IsCheck(self.Team) then
+		if self.MovesMade == 0 and not self.Board:IsCheck(self.Team) then
 			local queenSideRook = self.Board:GetPieceObjectAtSpot("A" .. self.Number)
 			local kingSideRook = self.Board:GetPieceObjectAtSpot("H" .. self.Number)
 
-			if queenSideRook and not queenSideRook.HasMoved then
+			if queenSideRook and queenSideRook.MovesMade == 0 then
 				local firstSpot = self.Board:GetSpotObjectAt(char(byte(self.Letter) - 1) .. self.Number)
 				local secondSpot = self.Board:GetSpotObjectAt(char(byte(self.Letter) - 2) .. self.Number)
 				local firstSpotPassable = not firstSpot:IsUnderAttack(self.Team) and not firstSpot.Piece
 				local secondSpotPassable = not secondSpot:IsUnderAttack(self.Team) and not secondSpot.Piece
 
 				if firstSpotPassable and secondSpotPassable then
-					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(secondSpot):SetIsCastling(true)
+					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(secondSpot):SetCastling(true)
 
 					insert(moves, move)
 				end
 			end
 
-			if kingSideRook and not kingSideRook.HasMoved then
+			if kingSideRook and kingSideRook.MovesMade == 0 then
 				local firstSpot = self.Board:GetSpotObjectAt(char(byte(self.Letter) + 1) .. self.Number)
 				local secondSpot = self.Board:GetSpotObjectAt(char(byte(self.Letter) + 2) .. self.Number)
 				local firstSpotPassable = not firstSpot:IsUnderAttack(self.Team) and not firstSpot.Piece
 				local secondSpotPassable = not secondSpot:IsUnderAttack(self.Team) and not secondSpot.Piece
 
 				if firstSpotPassable and secondSpotPassable then
-					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(secondSpot):SetIsCastling(true)
+					local move = Move.new():SetInitSpot(self.Spot):SetTargetSpot(secondSpot):SetCastling(true)
 
 					insert(moves, move)
 				end

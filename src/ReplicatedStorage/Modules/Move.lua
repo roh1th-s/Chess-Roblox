@@ -50,9 +50,9 @@ function Move:SetTargetPos(targetPosLetter, targetPosNum)
     return self
 end
 
-function Move:SetCastlingMoves(castlingMoves)
+function Move:SetCastling(isCastling, castlingMoves)
+    self.IsCastling = isCastling
     self.CastlingMoves = castlingMoves
-    self.IsCastling = true
 
     return self
 end
@@ -69,19 +69,17 @@ function Move:SetCapturedPiece(capturedPiece)
     return self
 end
 
-function Move:SetIsCastling(isCastling)
-    self.IsCastling = isCastling
-
-    return self
-end
-
-function Move:SetIsEnPassant(isEnPassant)
+function Move:SetEnPassant(isEnPassant, otherPawnSpot)
     self.IsEnPassant = isEnPassant
+    self.OtherPawnSpotPartial = {
+        Letter = otherPawnSpot.Letter,
+        Number = otherPawnSpot.Number
+    }
 
     return self
 end
 
-function Move:SetIsPromotion(isPromotion, promotedPiece, newPieceInstance)
+function Move:SetPromotion(isPromotion, promotedPiece, newPieceInstance)
 	self.IsPromotion = isPromotion	
 
 	self.PromotedPiece = promotedPiece
@@ -94,6 +92,7 @@ function Move:CreateSendableObject()
     local sendableMove = {}
 
     --clone table
+    --this is not being deep cloned.
     for key, value in pairs(self) do 
         sendableMove[key] = value 
     end
@@ -101,6 +100,11 @@ function Move:CreateSendableObject()
     sendableMove.MovedPiece = nil
     sendableMove.CapturedPiece = nil
 
+    if sendableMove.IsCastling then
+        sendableMove.CastlingMoves.InitRookSpot = nil
+        sendableMove.CastlingMoves.RookTargetSpot = nil
+    end
+    
     return sendableMove
 end
 

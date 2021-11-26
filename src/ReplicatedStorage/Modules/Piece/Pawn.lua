@@ -7,6 +7,9 @@ local Config = require(Modules:WaitForChild("Config"))
 local Move = require(Modules:WaitForChild("Move"))
 local Piece = require(script.Parent)
 
+local Remotes = RS:WaitForChild("Remotes")
+local OnClientTween = Remotes:WaitForChild("OnClientTween")
+
 local PieceClasses = {
 	Rook = require(script.Parent.Rook),
 	Knight = require(script.Parent.Knight),
@@ -14,14 +17,16 @@ local PieceClasses = {
 	Queen = require(script.Parent.Queen),
 }
 
-local Remotes = RS:WaitForChild("Remotes")
-local OnClientTween = Remotes:WaitForChild("OnClientTween")
-
 local insert = table.insert
 local remove = table.remove
 local char = string.char
 local byte = string.byte
 local num = tonumber
+
+local Pieces = {
+	Black = workspace.Black,
+	White = workspace.White,
+}
 
 local Pawn = {}
 Pawn.__index = Pawn
@@ -121,7 +126,7 @@ function Pawn:GetMoves(options)
 					and pieceOnSide.CanBeKilledByEnPassant
 					and lastMoveWasPawnMove
 				then
-					move:SetIsEnPassant(true)
+					move:SetEnPassant(true, spotOnSide)
 					insert(moves, move)
 				end
 			end
@@ -149,16 +154,12 @@ function Pawn:EnPassant(pawnToBeCaptured, targetSpot, options)
 	otherPawnSpot:SetPiece(nil)
 	targetSpot:SetPiece(self)
 
-	self.Spot = targetSpot
-	self.Number = targetSpot.Number
-	self.Letter = targetSpot.Letter
+	self:SetSpot(targetSpot)
 
-	self.HasMoved = true
+	self.MovesMade += 1
 
 	pawnToBeCaptured.Captured = true
-	pawnToBeCaptured.Spot = nil
-	pawnToBeCaptured.Number = nil
-	pawnToBeCaptured.Letter = nil
+	pawnToBeCaptured:SetSpot(nil)
 
 	if not simulatedMove then
 		if self.isServer then
@@ -187,7 +188,7 @@ function Pawn:EnPassant(pawnToBeCaptured, targetSpot, options)
 		:SetTargetSpot(targetSpot)
 		:SetMovedPiece(self)
 		:SetCapturedPiece(pawnToBeCaptured)
-		:SetIsEnPassant(true)
+		:SetEnPassant(true, otherPawnSpot)
 
 	return move
 end
@@ -206,68 +207,70 @@ function Pawn:Promote(promotedPiece, targetSpot, options)
 
 	if initOccupyingPiece then
 		initOccupyingPiece.Captured = true
-		initOccupyingPiece.Spot = nil
-		initOccupyingPiece.Number = nil
-		initOccupyingPiece.Letter = nil
+
+		initOccupyingPiece:SetSpot(nil)
 	end
 
-	local pieceClass = PieceClasses[promotedPiece]
-	local newPiece = pieceClass.new(targetSpot, self.Team, self.isServer)
-	insert(self.Board[self.Team .. "Pieces"], newPiece)
+	initSpot:SetPiece(nil)
+	targetSpot:SetPiece(self)
 
-	if not self.isServer then
-		if not newPieceInstance then
-			warn("(Promotion) new piece instance is nil. cannot set the instance property of the new piece")
-		end
+	self.Type = promotedPiece
+	self.Promoted = true
+	self:SetSpot(targetSpot)
+	setmetatable(self, PieceClasses[promotedPiece])
 
-		newPiece.Instance = newPieceInstance or nil
-	end
-
-	targetSpot:SetPiece(newPiece)
-
-	self.Instance:Destroy()
-	self.Instance = nil
-
-	self:Destroy() -- clearing references in board piece table, and from the current spot
+	self.MovesMade += 1
 
 	if not simulatedMove then
 		if self.isServer then
+			self.Instance:Destroy()
+			local model = PieceModels[promotedPiece]:Clone()
+			model.Position = initSpot.Instance.Position + Vector3.new(0, model.Size.Y / 2, 0)
+			--TEMP
+			if self.Team == "White" then
+				model.CFrame = model.CFrame * CFrame.Angles(0, math.rad(180), 0)
+			end
+			--
+			model.Color = self.Team == "White" and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
+			model.Parent = Pieces[self.Team]
+
+			self.Instance = model
+
 			if initOccupyingPiece then
 				initOccupyingPiece.Instance.Parent = workspace:WaitForChild("Captured" .. initOccupyingPiece.Team)
 			end
 		else
+			if not newPieceInstance then
+				warn("[Promotion] New piece instance is nil. Cannot set the instance property of the new piece!")
+			end
+	
+			self.Instance = newPieceInstance or nil
+
 			local tweenDuration = Config.PieceTween.Duration
 			local tweenEasingStyle = Config.PieceTween.EasingStyle
 
-			local Offset = (newPiece.Instance.Size.Y / 2) + (targetSpot.Instance.Size.Y / 2)
+			local Offset = (self.Instance.Size.Y / 2) + (targetSpot.Instance.Size.Y / 2)
 			local Pos = targetSpot.Instance.Position + Vector3.new(0, Offset, 0)
 
-			--new piece should initially be on the initial spot of the pawn (then tweened to the target)
-			newPiece.Instance.Position = initSpot.Instance.Position + Vector3.new(0, Offset, 0)
-
-			local tween = TS:Create(
-				newPiece.Instance,
-				TweenInfo.new(tweenDuration, tweenEasingStyle),
-				{ Position = Pos }
-			)
+			local tween = TS:Create(self.Instance, TweenInfo.new(tweenDuration, tweenEasingStyle), { Position = Pos })
 
 			task.spawn(function()
 				tween:Play()
 				tween.Completed:Wait(5)
 
-				OnClientTween:FireServer(newPiece.Instance, Pos)
+				OnClientTween:FireServer(self.Instance, Pos)
 			end)
 
 			return true -- no need to do the rest if on client
 		end
 	end
-
+	
 	local move = Move.new()
 		:SetInitSpot(initSpot)
 		:SetTargetSpot(targetSpot)
-		:SetMovedPiece(newPiece)
+		:SetMovedPiece(self)
 		:SetCapturedPiece(initOccupyingPiece)
-		:SetIsPromotion(true, promotedPiece, newPiece.Instance)
+		:SetPromotion(true, promotedPiece, self.Instance)
 
 	return move
 end

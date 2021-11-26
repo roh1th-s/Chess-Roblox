@@ -9,38 +9,48 @@ local Remotes = RS:WaitForChild("Remotes")
 local RequestMove = Remotes:WaitForChild("RequestMove")
 
 local byte = string.byte
+local insert = table.insert
 
-local plr = game.Players.LocalPlayer
 local TopBarSize = GUIS:GetGuiInset()
 local camera = workspace.CurrentCamera
 
-local fixedInputFilter = workspace.Map:GetDescendants()
+local blackPieces = workspace:WaitForChild("Black")
+local whitePieces = workspace:WaitForChild("White")
+local board = workspace:WaitForChild("Board")
 
 local InputHandler = {}
 InputHandler.__index = InputHandler
-
-InputHandler.Colors = {
-	["Indicator1"] = Color3.fromRGB(173, 120, 27),
-	["Normal"] = Color3.fromRGB(86, 86, 86),
-	["Attack"] = Color3.fromRGB(165, 0, 30),
-	["Check"] = Color3.fromRGB(255, 0, 0),
-}
-
-local selection = RS:WaitForChild("Highlight"):Clone()
-selection.Name = "Selection"
-selection.Material = Enum.Material.Plastic
-selection.Transparency = 1
-selection.Anchored = true
-selection.CanCollide = false
-
-InputHandler.selection = selection
 
 function InputHandler.new(client)
 	local self = setmetatable({}, InputHandler)
 
 	self.Client = client
+	self.Player = client.Player
 	self.Board = self.Client.BoardObject
-	
+
+	local selection = RS:WaitForChild("Highlight"):Clone()
+	selection.Name = "Selection"
+	selection.Material = Enum.Material.Plastic
+	selection.Transparency = 1
+	selection.Anchored = true
+	selection.CanCollide = false
+
+	self.Selection = selection
+
+	self.IndicatorColors = {
+		["Indicator1"] = Color3.fromRGB(173, 120, 27),
+		["Normal"] = Color3.fromRGB(86, 86, 86),
+		["Attack"] = Color3.fromRGB(165, 0, 30),
+		["Check"] = Color3.fromRGB(255, 0, 0),
+	}
+
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Whitelist
+	raycastParams.FilterDescendantsInstances = { board, whitePieces, blackPieces }
+	raycastParams.IgnoreWater = true
+
+	self.RayCastParams = raycastParams
+
 	return self
 end
 
@@ -71,7 +81,6 @@ function InputHandler:IsMoveValid(target)
 end
 
 function InputHandler:Init()
-
 	self.SelectedPiece = nil
 	self.Moves = {}
 
@@ -90,26 +99,24 @@ function InputHandler:Init()
 			return
 		end
 
-		local filter = fixedInputFilter
-		for _, instance in pairs(camera:GetChildren()) do
-			table.insert(filter, instance)
-		end
-
 		local unitRay = camera:ViewportPointToRay(vect2Pos.X, vect2Pos.Y + TopBarSize.Y, 0)
-		local ray = Ray.new(unitRay.Origin, unitRay.Direction * 500)
-		local target, pos = workspace:FindPartOnRayWithIgnoreList(ray, filter)
 
-		self:HandleInput(target)
+		local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 500, self.RayCastParams)
+
+		if raycastResult then
+			self:HandleInput(raycastResult.Instance)
+		end
+	
 	end)
 
 	--workspace.WhoseTurn.Changed:Connect(function(newVal)
 	--	if newVal then
-	--		if plr.Team.Name == "White" then
+	--		if self.Player.Team.Name == "White" then
 	--			self.turn = true
 	--			return
 	--		end
 	--	else
-	--		if plr.Team.Name == "Black" then
+	--		if self.Player.Team.Name == "Black" then
 	--			self.turn = true
 	--			return
 	--		end
@@ -125,24 +132,24 @@ function InputHandler:ClearHighlights()
 end
 
 function InputHandler:CreateHighlight(spot, color)
-	local highlight = selection:Clone()
+	local highlight = self.Selection:Clone()
 	local piece = self.Board:GetPieceObjectAtSpot(spot)
 	local coordsOfSpot = string.split(spot.Name, "")
 
-	if piece and piece.Team ~= plr.Team.Name then
-		highlight.Color = color or InputHandler.Colors.Attack
+	if piece and piece.Team ~= self.Player.Team.Name then
+		highlight.Color = color or self.IndicatorColors.Attack
 	elseif not piece and self.SelectedPiece and self.SelectedPiece.Type == "Pawn" then
 		--En Passant
 		local letterDiffFromTargetSpot = math.abs(byte(coordsOfSpot[1]) - byte(self.SelectedPiece.Letter))
 
 		if letterDiffFromTargetSpot == 1 then
 			print("En passant")
-			highlight.Color = color or InputHandler.Colors.Attack
+			highlight.Color = color or self.IndicatorColors.Attack
 		else
-			highlight.Color = color or InputHandler.Colors.Normal
+			highlight.Color = color or self.IndicatorColors.Normal
 		end
 	else
-		highlight.Color = color or InputHandler.Colors.Normal
+		highlight.Color = color or self.IndicatorColors.Normal
 	end
 
 	highlight.Size = spot.Size + Vector3.new(0, 0.2, 0)
@@ -175,7 +182,7 @@ function InputHandler:HandleInput(target)
 	if target.Parent.Name == "Board" then
 		--If target is a spot
 		local piece = self.Board:GetPieceObjectAtSpot(target)
-		
+
 		if piece then
 			if self.SelectedPiece then
 				if self:IsMoveValid(target) then
@@ -187,9 +194,8 @@ function InputHandler:HandleInput(target)
 				self.Moves = {}
 				self.SelectedPiece = false
 			else
-				if piece.Team == plr.Team.Name then
-					
-					self:CreateHighlight(target, InputHandler.Colors["Indicator1"])
+				if piece.Team == self.Player.Team.Name then
+					self:CreateHighlight(target, self.IndicatorColors["Indicator1"])
 					self.SelectedPiece = piece
 					self.Moves = piece:GetMoves()
 					self:HighlightMoves()
@@ -197,7 +203,6 @@ function InputHandler:HandleInput(target)
 			end
 		else
 			if self.SelectedPiece then
-				
 				if self:IsMoveValid(target) then
 					self:ClearEventIndicators()
 					self:HandleMove(self.SelectedPiece.Spot.Instance.Name, target.Name)
@@ -225,8 +230,8 @@ function InputHandler:HandleInput(target)
 			self.Moves = {}
 			self.SelectedPiece = nil
 		else
-			if piece.Team == plr.Team.Name then
-				self:CreateHighlight(piece.Spot.Instance, InputHandler.Colors["Indicator1"])
+			if piece.Team == self.Player.Team.Name then
+				self:CreateHighlight(piece.Spot.Instance, self.IndicatorColors["Indicator1"])
 				self.SelectedPiece = piece
 
 				self.Moves = piece:GetMoves()
@@ -246,11 +251,11 @@ function InputHandler:ClearEventIndicators()
 end
 
 function InputHandler:CheckIndicator()
-	local king = workspace[plr.Team.Name]:FindFirstChild("King")
+	local king = workspace[self.Player.Team.Name]:FindFirstChild("King")
 	local square = king.Coordinates.Value
-	local CH = selection:Clone()
+	local CH = self.Selection:Clone()
 	CH.Material = Enum.Material.Neon
-	CH.Color = InputHandler.InputHandler.Colors["Check"]
+	CH.Color = self.IndicatorColors["Check"]
 	CH.Size = square.Size + Vector3.new(0, 0.2, 0)
 	CH.Position = square.Position
 	CH.Parent = workspace["EventIndicators"]

@@ -20,7 +20,7 @@ function ChessCam.new(client)
 	self.ANGLE_AROUND_CENTER = 45
 	self.VERTICAL_ANGLE = 90
 
-	self.UNIT_ZOOM = 16
+	self.UNIT_ZOOM = 35
 	self.SENSITIVITY_X = 0.5
 	self.SENSITIVITY_Y = 0.8
 
@@ -104,7 +104,7 @@ function ChessCam:HandleInputChange(input, gameProcessedEvent)
 		local direction = -input.Position.Z
 		local newValue = math.clamp(self.RADIUS.Value + (direction * self.UNIT_ZOOM), 10, 200)
 
-		self.currentZoomTween = TS:Create(self.RADIUS, TweenInfo.new(0.13), { Value = newValue })
+		self.currentZoomTween = TS:Create(self.RADIUS, TweenInfo.new(0.1), { Value = newValue })
 		self.currentZoomTween:Play()
 
 		self.currentZoomTween.Completed:Connect(function()

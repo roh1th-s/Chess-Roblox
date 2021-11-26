@@ -1,8 +1,5 @@
 --Services
-local SSS = game:GetService("ServerScriptService")
 local RS = game:GetService("ReplicatedStorage")
-local SS = game:GetService("ServerStorage")
-local TS = game:GetService("TweenService")
 local PS = game:GetService("Players")
 local Teams = game:GetService("Teams")
 
@@ -47,22 +44,33 @@ function ChessGame.new()
 	}
 	self.Spectators = {}
 
+	
 	self.playerAddedEvent = PS.PlayerAdded:Connect(function(plr)
 		GameEvent:FireClient(plr)
 
-		if self.Players["White"] then --If white team's player already exists
+		--TODO Implement a proper system for teams
 
-			if not self.Players["Black"] then --If opposite team player doesnt exist then assign
+		--If white team's player already exists
+		if self.Players["White"] then
+
+			--If opposite team player doesnt exist then assign
+			if not self.Players["Black"] then 
 				self.Players["Black"] = plr
 				plr.Team = Teams["Black"]
 			else
-				table.insert(self.Spectators, plr) --If both players are there add to spectators list
+				--If both players are there add to spectators list
+				table.insert(self.Spectators, plr) 
 				plr.Team = Teams["Spectators"]
 			end
 		else
-			self.Players["White"] = plr --If white team player doesnt exist then assign
+			--If white team player doesnt exist then assign
+			self.Players["White"] = plr 
 			plr.Team = Teams["White"]
 		end
+
+		--TODO Remove temp testing code
+		self.Players["Black"] = plr
+
 	end)
 
 	self.requestMoveEvent = RequestMove.OnServerEvent:Connect(function(plr, pieceSpotName, targetSpotName)
@@ -106,7 +114,7 @@ end
 function ChessGame:PromptPromotion(team)
 	local plr = self.Players[team]
 	if not plr then error("Player not found") end
-	print(plr)
+	
 	Promotion:FireClient(plr)
 	local _, promotedPiece = Promotion.OnServerEvent:Wait(50)
 	
