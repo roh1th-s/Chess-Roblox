@@ -1,5 +1,5 @@
 {
-  "name": "project",
+  "name": "Chess",
   "tree": {
     "$className": "DataModel",
     "ReplicatedFirst": {
