@@ -21,6 +21,8 @@ local char = string.char
 local byte = string.byte
 local insert = table.insert
 local remove = table.remove
+local find = table.find
+local toNum = tonumber
 
 local _INIT_POSITIONS = {
 	["A8"] = "Rook",
@@ -57,6 +59,8 @@ local _INIT_POSITIONS = {
 	["G1"] = "Knight",
 	["H1"] = "Rook",
 }
+
+local RangedPieces = { "Queen", "Rook", "Bishop" }
 
 --Private
 
@@ -204,8 +208,23 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates, options
 
 	local oppTeam = piece:GetOppTeam()
 
-	if self:IsCheck(oppTeam) then
+	local attacks = self:IsCheck(oppTeam, true)
+	if attacks then
+		--If it's a check
 		print("Check")
+		local checkmate = self:IsCheckmate(oppTeam, attacks)
+
+		if checkmate then
+			print("Checkmate")
+		end
+	else
+		--If it's not a check
+
+		local stalemate = self:IsStalemate(oppTeam)
+
+		if stalemate then
+			print("Stalemate")
+		end
 	end
 
 	return move
@@ -227,6 +246,77 @@ function ChessBoard:WillMoveCauseCheck(initSpotCoordinates, targetSpotCoordinate
 	self:UndoLastSimulatedMove()
 
 	return isCheck
+end
+
+function ChessBoard:IsCheck(team, returnAttacks)
+	local King = self.Kings[team]
+	local KingSpot = King.Spot
+
+	return self:IsSpotUnderAttack(King.Team, KingSpot.Letter, KingSpot.Number, returnAttacks)
+end
+
+function ChessBoard:IsCheckmate(team, attacks)
+	local King = self.Kings[team]
+	local KingSpot = King.Spot
+
+	-- if there are 2 or more attacking pieces, the only way to get out of check is by moving the king.
+	if #attacks > 1 then
+		local kingMoves = King:GetMoves()
+
+		--if the king can make a legal move, its not checkmate
+		if #kingMoves > 0 then
+			return false
+		end
+	else
+		local attack = attacks[1]
+		local attackType = attack.AttackType
+		local initSpotLetter = attack.InitSpotLetter
+		local initSpotNumber = attack.InitSpotNumber
+
+		for _, piece in pairs(self[team .. "Pieces"]) do
+			if piece.Captured then
+				continue
+			end
+
+			for _, move in pairs(piece:GetMoves()) do
+				--if its a ranged piece, check if we have any piece that can be interposed between the king and attacker.
+				if attackType == "Ranged" then
+					local number = toNum(move.TargetPosNumber)
+					local kingSpotNumber = toNum(KingSpot.Number)
+
+					local letterCode = byte(move.TargetPosLetter)
+					local initSpotLetterCode = byte(initSpotLetter)
+					local kingSpotLetterCode = byte(KingSpot.Letter)
+					local minLetter, maxLetter = findMinAndMax(initSpotLetterCode, kingSpotLetterCode)
+
+					if minLetter <= letterCode and letterCode <= maxLetter then
+						local minNumber, maxNumber = findMinAndMax(number, kingSpotNumber)
+						if minNumber <= number and number <= maxNumber then
+							return false
+						end
+					end
+				else
+					--if its not a ranged piece, see if we can directly capture the attacker.
+					if move.TargetPosLetter == initSpotLetter and move.TargetSpotNumber == initSpotNumber then
+						return false
+					end
+				end
+			end
+		end
+	end
+
+	return true
+end
+
+function ChessBoard:IsStalemate(team)
+	for _, piece in pairs(self[team .. "Pieces"]) do
+		if piece.Captured then continue end
+		if #piece:GetMoves() > 0 then
+			return false
+		end
+	end
+
+	return true
 end
 
 function ChessBoard:GetLastMove()
@@ -256,7 +346,7 @@ function ChessBoard:UndoLastSimulatedMove()
 	local targetSpot = self:GetSpotObjectAt(move.TargetPosLetter, move.TargetPosNumber)
 
 	-- this shouldn't become negative
-	movedPiece.MovesMade -= 1	
+	movedPiece.MovesMade -= 1
 
 	initSpot:SetPiece(movedPiece)
 	targetSpot:SetPiece(capturedPiece or nil)
@@ -283,58 +373,55 @@ function ChessBoard:UndoLastSimulatedMove()
 
 		capturedPiece.Captured = false
 		capturedPiece:SetSpot(otherPawnSpot)
-
 	elseif move.IsPromotion then
 		movedPiece.Promoted = false
 		movedPiece.Type = "Pawn"
 		setmetatable(movedPiece, PieceClasses.Pawn)
-
-		
 	elseif move.IsCastling then
 		local castlingMoves = move.CastlingMoves
 		local initRookSpot = castlingMoves.InitRookSpot
 		local targetRookSpot = castlingMoves.RookTargetSpot
 
 		local rook = self:GetPieceObjectAtSpot(targetRookSpot)
-		
+
 		rook.MovesMade -= 1
 
 		rook:SetSpot(initRookSpot)
 		initRookSpot:SetPiece(rook)
 		targetRookSpot:SetPiece(nil)
-
-
 	end
-
 end
 
-function ChessBoard:IsCheck(team)
-	local King = self.Kings[team]
-	local KingSpot = King.Spot
-
-	return self:IsSpotUnderAttack(King.Team, KingSpot.Letter, KingSpot.Number)
-end
-
-function ChessBoard:IsSpotUnderAttack(team, arg1, arg2)
+function ChessBoard:IsSpotUnderAttack(team, arg1, arg2, returnAttacks)
 	local spot = self:GetSpotObjectAt(arg1, arg2)
 	local oppTeam = team == "Black" and "White" or "Black"
-	local attackingPieces = self[oppTeam .. "Pieces"]
+	local opponentPieces = self[oppTeam .. "Pieces"]
 
-	for _, attackingPiece in pairs(attackingPieces) do
-		if attackingPiece.Captured then
+	local attackingPieces = {}
+	for _, opponentPiece in pairs(opponentPieces) do
+		if opponentPiece.Captured then
 			--remove(attackingPieces, table.find(attackingPieces, attackingPiece))
 			continue
 		end
-		local moves = attackingPiece:GetMoves({ onlyAttacks = true, bypassCheckCondition = true })
+		local moves = opponentPiece:GetMoves({ onlyAttacks = true, bypassCheckCondition = true })
 
 		for _, move in pairs(moves) do
 			if spot.Letter == move.TargetPosLetter and spot.Number == move.TargetPosNumber then
-				return true
+				if returnAttacks then
+					insert(attackingPieces, {
+						AttackType = find(RangedPieces, opponentPiece.Type) and "Ranged" or opponentPiece.Type,
+						InitSpotLetter = opponentPiece.Spot.Letter,
+						InitSpotNumber = opponentPiece.Spot.Number,
+					})
+					break
+				else
+					return true
+				end
 			end
 		end
 	end
 
-	return false
+	return (returnAttacks and #attackingPieces > 0) and attackingPieces or false
 end
 
 --CLIENT ONLY
@@ -464,6 +551,25 @@ function ChessBoard:GetPiecesOfType(pieceType, team)
 	--end
 
 	return pieces
+end
+
+function findMinAndMax(...)
+	local array = { ... }
+
+	local min = 0
+	local max = 0
+
+	for i = 1, #array do
+		local num = array[i]
+		if num < min then
+			min = num
+		end
+		if num > max then
+			max = num
+		end
+	end
+
+	return min, max
 end
 
 return ChessBoard
