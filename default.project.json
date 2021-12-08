@@ -20,11 +20,6 @@
         "$path": "src/Client"
       },
       "$ignoreUnknownInstances": true
-    },
-    "ReplicatedFirst" : {
-      "$className": "ReplicatedFirst",
-      "$ignoreUnknownInstances": true,
-      "$path": "src/Client/ReplicatedFirst"
     }
   }
 }
