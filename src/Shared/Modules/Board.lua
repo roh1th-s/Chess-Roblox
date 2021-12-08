@@ -277,9 +277,13 @@ function ChessBoard:IsCheckmate(team, attacks)
 			if piece.Captured then
 				continue
 			end
-
+			
 			for _, move in pairs(piece:GetMoves()) do
 				--if its a ranged piece, check if we have any piece that can be interposed between the king and attacker.
+				if piece.Spot.Instance.Name == "H6" then
+					print(move)
+				end
+				
 				if attackType == "Ranged" then
 					local number = toNum(move.TargetPosNumber)
 					local kingSpotNumber = toNum(KingSpot.Number)
@@ -297,7 +301,7 @@ function ChessBoard:IsCheckmate(team, attacks)
 					end
 				else
 					--if its not a ranged piece, see if we can directly capture the attacker.
-					if move.TargetPosLetter == initSpotLetter and move.TargetSpotNumber == initSpotNumber then
+					if move.TargetPosLetter == initSpotLetter and move.TargetPosNumber == initSpotNumber then
 						return false
 					end
 				end
