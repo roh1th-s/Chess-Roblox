@@ -72,11 +72,11 @@ ChessBoard.__index = function(table, index)
 	return nil
 end
 
-function ChessBoard.new(isClient, currentGame)
+function ChessBoard.new(isClient, arg2)
 	local self = {}
 	setmetatable(self, ChessBoard)
 
-	self.Game = currentGame
+	self.Game = arg2
 
 	self.Spots = {}
 	self.Kings = {}
@@ -87,6 +87,7 @@ function ChessBoard.new(isClient, currentGame)
 	self.LastSimulatedMove = nil
 
 	if isClient then
+		self.Client = arg2
 		self.isServer = false
 		self.pieceSpotDictionary = getPieceSpotDictionary:InvokeServer()
 	else
@@ -211,11 +212,21 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates, options
 	local attacks = self:IsCheck(oppTeam, true)
 	if attacks then
 		--If it's a check
-		print("Check")
+
 		local checkmate = self:IsCheckmate(oppTeam, attacks)
 
 		if checkmate then
-			print("Checkmate")
+			--If it's a checkmate
+			move.GameEnded = true
+			move.GameEndReason = "Checkmate"
+			move.Winner = piece.Team
+			self.Game:End("Checkmate")
+		else
+			move.IsCheck = true
+			move.CheckData = {
+				CheckedTeam = oppTeam
+			}
+			self.Game:Check(oppTeam)
 		end
 	else
 		--If it's not a check
@@ -223,7 +234,10 @@ function ChessBoard:MakeMove(initSpotCoordinates, targetSpotCoordinates, options
 		local stalemate = self:IsStalemate(oppTeam)
 
 		if stalemate then
-			print("Stalemate")
+			move.GameEnded = true
+			move.IsDraw = true
+			move.GameEndReason = "Stalemate"
+			self.Game:End("Stalemate", true)
 		end
 	end
 
@@ -277,13 +291,13 @@ function ChessBoard:IsCheckmate(team, attacks)
 			if piece.Captured then
 				continue
 			end
-			
+
 			for _, move in pairs(piece:GetMoves()) do
 				--if its a ranged piece, check if we have any piece that can be interposed between the king and attacker.
 				if piece.Spot.Instance.Name == "H6" then
 					print(move)
 				end
-				
+
 				if attackType == "Ranged" then
 					local number = toNum(move.TargetPosNumber)
 					local kingSpotNumber = toNum(KingSpot.Number)
@@ -314,7 +328,9 @@ end
 
 function ChessBoard:IsStalemate(team)
 	for _, piece in pairs(self[team .. "Pieces"]) do
-		if piece.Captured then continue end
+		if piece.Captured then
+			continue
+		end
 		if #piece:GetMoves() > 0 then
 			return false
 		end
@@ -439,6 +455,8 @@ function ChessBoard:Update(move)
 
 		castlingKing:Castle(castlingRook)
 
+		self:UpdateTurn(castlingKing.Team)
+
 		return false -- Don't do the rest (already done)
 	end
 
@@ -458,6 +476,8 @@ function ChessBoard:Update(move)
 			move = initPiece:EnPassant(pieceOnSide, targetSpot)
 		end
 
+		self:UpdateTurn(initPiece.Team)
+
 		return false
 	end
 
@@ -468,12 +488,25 @@ function ChessBoard:Update(move)
 
 		move = initPiece:Promote(move.PromotedPiece, targetSpot, { newPieceInstance = move.NewPieceInstance })
 
+		self:UpdateTurn(initPiece.Team)
+
 		return false
 	end
 
 	initPiece:MoveTo(targetSpot.Letter, targetSpot.Number)
 
 	self.LastMove = move -- this is not really required as of now (but its there)
+
+	-- update turn
+	self:UpdateTurn(initPiece.Team)
+end
+
+function ChessBoard:UpdateTurn(teamOfMovedPiece)
+	if teamOfMovedPiece == self.Client.Player.Team.Name then
+		self.Client.LocalPlayersTurn = false
+	else
+		self.Client.LocalPlayersTurn = true
+	end
 end
 
 function ChessBoard:GetSpotObjectAt(arg1, arg2)
@@ -555,6 +588,29 @@ function ChessBoard:GetPiecesOfType(pieceType, team)
 	--end
 
 	return pieces
+end
+
+function ChessBoard:Destroy()
+	for _, blackPiece in pairs(self.BlackPieces) do
+		if blackPiece.Instance then
+			if self.isServer then
+				blackPiece.Instance:Destroy()
+			end
+			blackPiece.Instance = nil
+		end
+	end
+	for _, whitePiece in pairs(self.WhitePieces) do
+		if whitePiece.Instance then
+			if self.isServer then
+				whitePiece.Instance:Destroy()
+			end
+			whitePiece.Instance = nil
+		end
+	end
+
+	for key, value in pairs(self) do
+		self[key] = nil
+	end
 end
 
 function findMinAndMax(...)

@@ -5,11 +5,11 @@ local PromotionUI = {}
 
 function PromotionUI:Init(handler)
 	self.Handler = handler
-	self.Player = handler.plr
+	self.Player = handler.Plr
 	self.Initialized = false
 
-	local plrGui = self.Player:WaitForChild("PlayerGui")
-	local promotionUI = plrGui.UI.PromotionUI
+	local UIContainer = self.Handler.UIContainer
+	local promotionUI = UIContainer.PromotionUI
 
 	self.PromotionFrame = promotionUI.PromotionFrame
 	self.Viewports = self.PromotionFrame.Viewports:GetChildren()

@@ -6,10 +6,7 @@ local Piece = require(script.Parent)
 
 local Modules = RS:WaitForChild("Modules")
 local Move = require(Modules:WaitForChild("Move"))
-local Config = require(Modules:WaitForChild("Config"))
-
-local Remotes = RS:WaitForChild("Remotes")
-local OnClientTween = Remotes:WaitForChild("OnClientTween")
+local PieceTween = require(Modules:WaitForChild("PieceTween"))
 
 local insert = table.insert
 local char = string.char
@@ -72,42 +69,9 @@ function King:Castle(rook, options)
 	rook.MovesMade += 1
 
 	if not simulatedMove then
-		if not self.isServer then
-			local tweenDuration = Config.PieceTween.Duration
-			local tweenEasingStyle = Config.PieceTween.EasingStyle
-
-			--Moving king
-			local Offset = (self.Instance.Size.Y / 2) + (kingTargetSpot.Instance.Size.Y / 2)
-			local KingPos = kingTargetSpot.Instance.Position + Vector3.new(0, Offset, 0)
-
-			local kingTween = TS:Create(
-				self.Instance,
-				TweenInfo.new(tweenDuration, tweenEasingStyle),
-				{ Position = KingPos }
-			)
-
-			--Moving rook
-			local Offset = (rook.Instance.Size.Y / 2) + (rookTargetSpot.Instance.Size.Y / 2)
-			local RookPos = rookTargetSpot.Instance.Position + Vector3.new(0, Offset, 0)
-
-			local rookTween = TS:Create(
-				rook.Instance,
-				TweenInfo.new(tweenDuration, tweenEasingStyle),
-				{ Position = RookPos }
-			)
-
-			task.spawn(function()
-				kingTween:Play()
-				rookTween:Play()
-
-				if not rookTween.PlaybackState == Enum.PlaybackState.Completed then
-					rookTween.Completed:Wait(5)
-				end
-
-				OnClientTween:FireServer(self.Instance, KingPos)
-				OnClientTween:FireServer(rook.Instance, RookPos)
-			end)
-
+		if not self.isServer then	
+			PieceTween.AnimatePieceMove(self.Instance, kingTargetSpot.Instance)
+			PieceTween.AnimatePieceMove(rook.Instance, rookTargetSpot.Instance)
 			return true -- no need to do the rest if on client
 		end
 	end

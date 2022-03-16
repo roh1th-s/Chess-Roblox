@@ -3,10 +3,7 @@ local RS = game:GetService("ReplicatedStorage")
 
 local Modules = RS:WaitForChild("Modules")
 local Move = require(Modules:WaitForChild("Move"))
-local Config = require(Modules:WaitForChild("Config"))
-
-local Remotes = RS:WaitForChild("Remotes")
-local OnClientTween = Remotes:WaitForChild("OnClientTween")
+local PieceTween = require(Modules:WaitForChild("PieceTween"))
 
 local remove = table.remove
 
@@ -93,19 +90,11 @@ function Piece:MoveTo(arg1, arg2, options)
 				initOccupyingPiece.Instance.Parent = workspace:WaitForChild("Captured" .. initOccupyingPiece.Team)
 			end
 		else
-			local tweenDuration = Config.PieceTween.Duration
-			local tweenEasingStyle = Config.PieceTween.EasingStyle
-
-			local Offset = (self.Instance.Size.Y / 2) + (targetSpot.Instance.Size.Y / 2)
-			local Pos = targetSpot.Instance.Position + Vector3.new(0, Offset, 0)
-			local tween = TS:Create(self.Instance, TweenInfo.new(tweenDuration, tweenEasingStyle), { Position = Pos })
-
-			task.spawn(function()
-				tween:Play()
-				tween.Completed:Wait(5)
-
-				OnClientTween:FireServer(self.Instance, Pos)
-			end)
+			PieceTween.AnimatePieceMove(self.Instance, targetSpot.Instance)
+			
+			if initOccupyingPiece then
+				PieceTween.AnimatePieceCapture(initOccupyingPiece)
+			end
 
 			return true -- no need to do the rest if on client
 		end

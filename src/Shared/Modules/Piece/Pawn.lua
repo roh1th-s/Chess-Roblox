@@ -3,12 +3,9 @@ local TS = game:GetService("TweenService")
 local PieceModels = RS:WaitForChild("PieceModels")
 
 local Modules = RS:WaitForChild("Modules")
-local Config = require(Modules:WaitForChild("Config"))
+local PieceTween = require(Modules:WaitForChild("PieceTween"))
 local Move = require(Modules:WaitForChild("Move"))
 local Piece = require(script.Parent)
-
-local Remotes = RS:WaitForChild("Remotes")
-local OnClientTween = Remotes:WaitForChild("OnClientTween")
 
 local PieceClasses = {
 	Rook = require(script.Parent.Rook),
@@ -165,19 +162,9 @@ function Pawn:EnPassant(pawnToBeCaptured, targetSpot, options)
 		if self.isServer then
 			pawnToBeCaptured.Instance.Parent = workspace:WaitForChild("Captured" .. pawnToBeCaptured.Team)
 		else
-			local tweenDuration = Config.PieceTween.Duration
-			local tweenEasingStyle = Config.PieceTween.EasingStyle
+			PieceTween.AnimatePieceMove(self.Instance, targetSpot.Instance)
 
-			local Offset = (self.Instance.Size.Y / 2) + (targetSpot.Instance.Size.Y / 2)
-			local Pos = targetSpot.Instance.Position + Vector3.new(0, Offset, 0)
-			local tween = TS:Create(self.Instance, TweenInfo.new(tweenDuration, tweenEasingStyle), { Position = Pos })
-
-			task.spawn(function()
-				tween:Play()
-				tween.Completed:Wait(5)
-
-				OnClientTween:FireServer(self.Instance, Pos)
-			end)
+			PieceTween.AnimatePieceCapture(pawnToBeCaptured)
 
 			return true -- no need to do the rest if on client
 		end
@@ -246,21 +233,12 @@ function Pawn:Promote(promotedPiece, targetSpot, options)
 	
 			self.Instance = newPieceInstance or nil
 
-			local tweenDuration = Config.PieceTween.Duration
-			local tweenEasingStyle = Config.PieceTween.EasingStyle
+			PieceTween.AnimatePieceMove(self.Instance, targetSpot.Instance)
 
-			local Offset = (self.Instance.Size.Y / 2) + (targetSpot.Instance.Size.Y / 2)
-			local Pos = targetSpot.Instance.Position + Vector3.new(0, Offset, 0)
-
-			local tween = TS:Create(self.Instance, TweenInfo.new(tweenDuration, tweenEasingStyle), { Position = Pos })
-
-			task.spawn(function()
-				tween:Play()
-				tween.Completed:Wait(5)
-
-				OnClientTween:FireServer(self.Instance, Pos)
-			end)
-
+			if initOccupyingPiece then
+				PieceTween.AnimatePieceCapture(initOccupyingPiece)
+			end
+			
 			return true -- no need to do the rest if on client
 		end
 	end

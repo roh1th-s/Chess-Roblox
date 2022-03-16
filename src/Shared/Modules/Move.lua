@@ -19,6 +19,12 @@ function Move.new(initPosLetter, initPosNum, targetPosLetter, targetPosNum,
     self.IsPromotion = isPromotion
     self.PromotedPiece = promotedPiece
 
+    self.GameEnded = false
+    self.EndInfo = nil
+
+    self.IsCheck = false
+    self.CheckData = nil
+    
     return self
 end
 

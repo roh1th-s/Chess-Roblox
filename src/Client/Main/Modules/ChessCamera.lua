@@ -9,29 +9,6 @@ local rad = math.rad
 local ChessCam = {}
 ChessCam.__index = ChessCam
 
-function ChessCam.new(client)
-	local self = setmetatable({}, ChessCam)
-
-	self.client = client
-	self.plr = client.Player
-	self.cam = workspace.CurrentCamera
-	self.board = workspace:WaitForChild("Board")
-
-	self.ANGLE_AROUND_CENTER = 45
-	self.VERTICAL_ANGLE = 90
-
-	self.UNIT_ZOOM = 35
-	self.SENSITIVITY_X = 0.5
-	self.SENSITIVITY_Y = 0.8
-
-	self.RADIUS = Instance.new("NumberValue")
-	self.RADIUS.Value = 100
-
-	self.currentZoomTween = nil
-
-	return self
-end
-
 --static methods
 function ChessCam.AngleClamp(angle)
 	if angle > 360 then
@@ -52,14 +29,32 @@ end
 --end
 
 --instance methods
-function ChessCam:Init()
-	self.centerCFrame, self.size = self.board:GetBoundingBox()
+function ChessCam:Init(client)
+
+	self.Client = client
+	self.Plr = client.Player
+	self.Cam = workspace.CurrentCamera
+	self.Board = workspace:WaitForChild("Board")
+
+	self.ANGLE_AROUND_CENTER = 45
+	self.VERTICAL_ANGLE = 90
+
+	self.UNIT_ZOOM = 35
+	self.SENSITIVITY_X = 0.5
+	self.SENSITIVITY_Y = 0.8
+
+	self.RADIUS = Instance.new("NumberValue")
+	self.RADIUS.Value = 100
+
+	self.CurrentZoomTween = nil
+
+	self.centerCFrame, self.size = self.Board:GetBoundingBox()
 	self.centerCFrame = CFrame.new(self.centerCFrame.Position)
 
 	repeat
 		task.wait()
-		self.cam.CameraType = Enum.CameraType.Scriptable
-	until self.cam.CameraType == Enum.CameraType.Scriptable
+		self.Cam.CameraType = Enum.CameraType.Scriptable
+	until self.Cam.CameraType == Enum.CameraType.Scriptable
 
 	self.inputBeganConnection = UIS.InputBegan:Connect(function(input, gpe)
 		self:HandleInputBegin(input, gpe)
@@ -82,7 +77,7 @@ function ChessCam:Update(dt)
 		* CFrame.Angles(-rad(self.VERTICAL_ANGLE), 0, 0)
 	camCFrame = camCFrame * CFrame.new(0, 0, self.RADIUS.Value)
 
-	self.cam.CFrame = camCFrame
+	self.Cam.CFrame = camCFrame
 end
 
 function ChessCam:HandleInputBegin(input, gameProcessedEvent)
@@ -104,12 +99,12 @@ function ChessCam:HandleInputChange(input, gameProcessedEvent)
 		local direction = -input.Position.Z
 		local newValue = math.clamp(self.RADIUS.Value + (direction * self.UNIT_ZOOM), 10, 200)
 
-		self.currentZoomTween = TS:Create(self.RADIUS, TweenInfo.new(0.1), { Value = newValue })
-		self.currentZoomTween:Play()
+		self.CurrentZoomTween = TS:Create(self.RADIUS, TweenInfo.new(0.1), { Value = newValue })
+		self.CurrentZoomTween:Play()
 
-		self.currentZoomTween.Completed:Connect(function()
-			self.currentZoomTween:Destroy()
-			self.currentZoomTween = nil
+		self.CurrentZoomTween.Completed:Connect(function()
+			self.CurrentZoomTween:Destroy()
+			self.CurrentZoomTween = nil
 		end)
 	elseif input.UserInputType == Enum.UserInputType.MouseMovement then
 		if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
