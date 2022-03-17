@@ -74,8 +74,15 @@ function ChessGame.new(service)
 		end
 
 		print(move.EndInfo)
-		ClientBoardUpdate:FireAllClients(move:CreateSendableObject())
-
+		if self.ChessService then
+			-- just in case some additional code needs to be run before clients are updated
+			self.ChessService:UpdateClients(move:CreateSendableObject())
+		else
+			-- ofc this cannot work if the game has ended and :Destroy() has been called (ChessService will be nil)
+			ClientBoardUpdate:FireAllClients(move:CreateSendableObject())
+		end
+		
+		
 		if move.GameEnded then
 			return
 		end

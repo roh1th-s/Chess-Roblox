@@ -26,6 +26,14 @@ EndGameModal.EndGameReasons = {
         Text = "Stalemate",
         Color = Color3.fromRGB(255, 214, 147),
     },
+	Draw = {
+		Text = "Mutual draw",
+		Color = Color3.fromRGB(255, 214, 147),
+	},
+	Resign = {
+		Text = "Forfeit",
+		Color = Color3.fromRGB(255, 214, 147),
+	}
 }
 
 function EndGameModal:Init(handler)
@@ -71,7 +79,7 @@ function EndGameModal:Show(data)
 	local messageType = data.isDraw and "Draw" or (data.playerWon and "Win" or "Loss")
 	local endGameMessageData = EndGameModal.EndGameMessages[messageType]
 
-	if endGameMessageData then
+	if endGameMessageData and not (data.reason == "Draw")then
 		self.EndGameMessage.Text = endGameMessageData.Text
 		self.EndGameMessage.TextColor3 = endGameMessageData.Color
 	end

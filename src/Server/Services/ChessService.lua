@@ -8,15 +8,18 @@ local Modules = ServerScriptService:WaitForChild("Modules")
 local ChessGame = require(Modules:WaitForChild("ChessGame"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local RequestDraw = Remotes:WaitForChild("RequestDraw")
+local ResignEvent = Remotes:WaitForChild("Resign")
 local RematchEvent = Remotes:WaitForChild("Rematch")
 local PlayerReady = Remotes:WaitForChild("PlayerReady")
 local GameEvent = Remotes:WaitForChild("GameEvent")
 local ServerPiecePositionUpdate = Remotes:WaitForChild("ServerPiecePositionUpdate")
+local ClientBoardUpdate = Remotes:WaitForChild("ClientBoardUpdate")
 
 local insert = table.insert
 local function table_length(t)
 	local z = 0.
-	for i, v in pairs(t) do
+	for _, _ in pairs(t) do
 		z = z + 1
 	end
 	return z
@@ -34,6 +37,7 @@ function ChessService:Init()
 
 	self.CurrentGame = ChessGame.new(self)
 	self.RematchConsents = {}
+	self.DrawConsents = {}
 
 	self.GameUpdateConnection = self.CurrentGame.Status.Event:Connect(function(...)
 		self:HandleGameUpdate(...)
@@ -43,6 +47,10 @@ function ChessService:Init()
 		self:HandlePlayerReady(...)
 	end)
 
+	self.PlayerRemovingConnection = PlayerService.PlayerRemoving:Connect(function(...)
+		self:HandlePlayerRemoving(...)
+	end)
+
 	self.UpdateServerPiecePositionEvent = ServerPiecePositionUpdate.OnServerEvent:Connect(function(...)
 		self:HandlePiecePositionUpdate(...)
 	end)
@@ -50,6 +58,25 @@ function ChessService:Init()
 	self.RematchEventConnection = RematchEvent.OnServerEvent:Connect(function(...)
 		self:HandleRematch(...)
 	end)
+
+	self.DrawEventConnection = RequestDraw.OnServerEvent:Connect(function(...)
+		self:HandleDrawRequest(...)
+	end)
+
+	self.ResignEventConnection = ResignEvent.OnServerEvent:Connect(function(...)
+		self:HandleResign(...)
+	end)
+end
+
+function ChessService:UpdateClients(sendableMove)
+	ClientBoardUpdate:FireAllClients(sendableMove)
+end
+
+function ChessService:HandlePlayerRemoving(plr)
+	local playerTeam = plr.Team.Name
+	if playerTeam == "Black" or playerTeam == "White" then
+		self:HandleResign(plr)
+	end
 end
 
 function ChessService:HandleGameUpdate(info)
@@ -66,6 +93,8 @@ function ChessService:HandleGameUpdate(info)
 		self.CurrentGame = nil
 		self.GameInProgress = false
 
+		self.RematchConsents = {}
+		self.DrawConsents = {}
 		--[[ self.Players = {
 			Black = nil,
 			White = nil,
@@ -108,6 +137,41 @@ function ChessService:HandleRematch(plr)
 		print("Sending out rematch notification")
 		GameEvent:FireAllClients({ message = "RematchRequest", initiatingPlayer = plr })
 	end
+end
+
+function ChessService:HandleDrawRequest(plr)
+	if self.DrawConsents[plr.UserId] or not self.GameInProgress then
+		return
+	end
+	self.DrawConsents[plr.UserId] = true
+	if table_length(self.DrawConsents) >= 2 then
+		self:HandleGameUpdate({ message = "End", reason = "Draw", isDraw = true })
+
+		GameEvent:FireAllClients({
+			message = "Draw",
+		})
+
+		self.DrawConsents = {}
+	else
+		print("Sending out draw notification")
+		GameEvent:FireAllClients({ message = "DrawRequest", initiatingPlayer = plr })
+	end
+end
+
+function ChessService:HandleResign(plr)
+	if not self.GameInProgress then return end
+
+	local winner = plr.Team.Name == "Black" and "White" or "Black"
+	local loser = plr.Team.Name
+
+	self:HandleGameUpdate({ message = "End", reason = "Resign", winner = winner, loser = loser })
+
+	GameEvent:FireAllClients({
+		message = "Resign",
+		resigningPlayer = plr,
+		winner = winner,
+		loser = loser,
+	})
 end
 
 function ChessService:HandlePlayerReady(plr)

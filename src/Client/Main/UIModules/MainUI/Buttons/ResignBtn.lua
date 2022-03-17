@@ -43,6 +43,10 @@ function ResignBtn:Enable()
         self.IconWhitenTween:Play()
         self.FlagTipBackTween:Play()
     end)
+
+    self.ClickedConnection = self.ImageButton.MouseButton1Down:Connect(function()
+        self.Handler:HandleUIEvent("Resign")
+    end)
 end
 
 function ResignBtn:Disable()
@@ -50,6 +54,7 @@ function ResignBtn:Disable()
 
     self.MouseEnterConnection:Disconnect()
     self.MouseLeaveConnection:Disconnect()
+    self.ClickedConnection:Disconnect()
 end
 
 return ResignBtn

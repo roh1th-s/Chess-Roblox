@@ -38,4 +38,9 @@ function Buttons:Disable()
 	end
 end
 
+
+function Buttons:HandleUIEvent(eventName, data)
+	self.Handler:HandleUIEvent(eventName, data)
+end
+
 return Buttons

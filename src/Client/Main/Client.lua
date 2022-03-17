@@ -8,6 +8,8 @@ local Board = require(SharedModules:WaitForChild("Board"))
 local ClientModules = script.Parent:WaitForChild("Modules")
 
 local Remotes = RS:WaitForChild("Remotes")
+local RequestDraw = Remotes:WaitForChild("RequestDraw")
+local ResignEvent = Remotes:WaitForChild("Resign")
 local RematchEvent = Remotes:WaitForChild("Rematch")
 local PromotionEvent = Remotes:WaitForChild("Promotion")
 local PlayerReady = Remotes:WaitForChild("PlayerReady")
@@ -80,7 +82,6 @@ function Client:HandleGameEvent(data)
 
 			self.BoardObject:Init(workspace.Board)
 		elseif message == "RematchRequest" then
-			
 			if not data.initiatingPlayer or data.initiatingPlayer == self.Player then
 				--[[ --Debug
 				if not (workspace.Debug and workspace.Debug.Value == true and RunService:IsStudio()) then
@@ -88,9 +89,32 @@ function Client:HandleGameEvent(data)
 				end	 ]]
 				return
 			end
-			
-			print(data)
-			self.GameUIHandler:ShowNotification({ message = data.initiatingPlayer.Name .. " has requested a rematch!" })
+
+			self.GameUIHandler:ShowNotification({
+				message = data.initiatingPlayer.Name .. " has requested a rematch!",
+				uiEvent = "Rematch",
+			})
+		elseif message == "DrawRequest" then
+			if not data.initiatingPlayer or data.initiatingPlayer == self.Player then
+				return
+			end
+
+			self.GameUIHandler:ShowNotification({
+				message = data.initiatingPlayer.Name .. " has offered a draw!",
+				uiEvent = "Draw",
+			})
+		elseif message == "Resign" then
+			self:HandleGameEnd({
+				reason = "Resign",
+				winner = data.winner,
+				loser = data.loser,
+				playerWon = data.winner == self.Player.Team.Name,
+			})
+		elseif message == "Draw" then
+			self:HandleGameEnd({
+				reason = "Draw",
+				isDraw = true,
+			})
 		end
 	end
 end
@@ -149,6 +173,10 @@ function Client:HandleUIEvent(eventName, data)
 	if eventName == "Rematch" then
 		print("Requesting rematch")
 		RematchEvent:FireServer()
+	elseif eventName == "Resign" then
+		ResignEvent:FireServer()
+	elseif eventName == "Draw" then
+		RequestDraw:FireServer()
 	end
 end
 

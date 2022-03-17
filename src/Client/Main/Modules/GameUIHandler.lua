@@ -46,7 +46,10 @@ end
 
 function GameUIHandler:ShowNotification(data)
     self.Modules.NotificationUI:PushNotification(data, function()
-        self.Client:HandleUIEvent("Rematch")
+        if data.uiEvent then
+            self.Client:HandleUIEvent(data.uiEvent)
+        end
+        
     end, function()
         -- handle notification reject
     end)

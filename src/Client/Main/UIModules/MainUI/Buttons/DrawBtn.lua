@@ -25,6 +25,10 @@ function DrawBtn:Enable()
     self.MouseLeaveConnection = self.ImageButton.MouseLeave:Connect(function()
        
     end)
+
+    self.ClickedConnection = self.ImageButton.MouseButton1Down:Connect(function()
+        self.Handler:HandleUIEvent("Draw")
+    end)
 end
 
 function DrawBtn:Disable()
@@ -32,6 +36,7 @@ function DrawBtn:Disable()
 
     self.MouseEnterConnection:Disconnect()
     self.MouseLeaveConnection:Disconnect()
+    self.ClickedConnection:Disconnect()
 end
 
 return DrawBtn
